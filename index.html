@@ -259,6 +259,28 @@
         async function fetchBalance() { const res = await apiFetch('/api/kassza'); const d = await res.json(); document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $'; }
         async function fetchProfil() { const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json(); document.getElementById('display-nev').innerText = p.nev; document.getElementById('display-rang').innerText = p.rang; document.getElementById('input-bemutatkozas').value = p.bemutatkozas || ''; }
         async function mentesProfil() { const b = document.getElementById('input-bemutatkozas').value; await apiFetch(`/api/profil/${myUserId}`, {method:'PUT', body:JSON.stringify({bemutatkozas:b})}); alert("Mentve!"); }
+        async function posztolHir() {
+    const cim = document.getElementById('hir-cim').value;
+    const tartalom = document.getElementById('hir-tartalom').value;
+    await apiFetch('/api/hirek', { method: 'POST', body: JSON.stringify({ cim, tartalom }) });
+    document.getElementById('hir-cim').value = '';
+    document.getElementById('hir-tartalom').value = '';
+    fetchHirek();
+}
+
+async function inditTranzakcio(tipus) {
+    const osszegStr = document.getElementById('osszeg').value.replace(/\s/g, "");
+    const osszeg = parseInt(osszegStr);
+    if (isNaN(osszeg) || osszeg <= 0) return alert("Érvénytelen összeg!");
+    
+    // Ehhez a server.js-ben is kell egy POST /api/kassza ág, ha naplózni is akarod!
+    await apiFetch('/api/kassza', { 
+        method: 'POST', 
+        body: JSON.stringify({ tipus, osszeg, operator: myUserName }) 
+    });
+    document.getElementById('osszeg').value = '';
+    fetchBalance();
+}
         async function kirugas(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, {method:'DELETE'}); fetchTagok(); } }
         async function torolRang(r) { if(confirm("Törlöd?")) { await apiFetch(`/api/rangok/${r}`, {method:'DELETE'}); location.reload(); } }
     </script>
