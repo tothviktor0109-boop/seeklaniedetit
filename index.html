@@ -18,7 +18,7 @@
         nav { display: flex; justify-content: center; background: rgba(4, 9, 17, 0.8); padding: 0.5rem; border-bottom: var(--panel-border); }
         .nav-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 0.5rem 1.2rem; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; }
         .nav-btn.active-nav { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
-        .btn { border: 1px solid var(--primary); padding: 0.8rem 1.8rem; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--primary); font-weight: 800; transition: 0.2s; }
+        .btn { border: 1px solid var(--primary); padding: 0.8rem 1.8rem; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--primary); font-weight: 800; }
         .btn:hover { background: var(--primary); color: var(--bg); box-shadow: 0 0 15px var(--primary); }
         input, textarea, select { padding: 0.8rem 1rem; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--primary-border); width: 100%; margin-bottom: 1rem; outline: none; font-family: 'Oxanium'; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
@@ -73,7 +73,7 @@
             <div id="kassza-section" class="section">
                 <div class="card" style="text-align: center;">
                     <h1 id="balanceDisplay" style="font-size: 3rem; color: var(--success);">0 $</h1>
-                    <div id="kassza-controls" style="display:none;">
+                    <div id="kassza-controls" style="display:block;">
                         <input type="text" id="osszeg" placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)">
                         <button class="btn" onclick="inditTranzakcio('be')">Befizetés</button>
                         <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger);" onclick="inditTranzakcio('ki')">Kivétel</button>
@@ -104,11 +104,13 @@
             <div id="jogok-section" class="section">
                 <div class="card">
                     <h2 style="color:var(--danger)">ADMIN - Rangok</h2>
-                    <input type="text" id="uj-rang-nev" placeholder="Név" style="width:200px;">
-                    <input type="number" id="uj-rang-prio" placeholder="Prio" style="width:100px;">
-                    <button class="btn" onclick="letrehozRang()">Létrehozás</button>
+                    <div style="display:flex; gap:10px; margin-bottom: 20px;">
+                        <input type="text" id="uj-rang-nev" placeholder="Név" style="width:200px;">
+                        <input type="number" id="uj-rang-prio" placeholder="Prio" style="width:100px;">
+                        <button class="btn" onclick="letrehozRang()">Létrehozás</button>
+                    </div>
                     <table style="margin-top:20px">
-                        <thead><tr><th>Rang (P)</th><th>Hír+</th><th>Hír-K</th><th>Kassza</th><th>Tag+</th><th>Jog+</th><th>Név</th><th>Műv</th></tr></thead>
+                        <thead><tr><th>Rang (Név + Prio)</th><th>Hír+</th><th>Hír-K</th><th>Kassza</th><th>Tag+</th><th>Jog+</th><th>Név</th><th>Műv</th></tr></thead>
                         <tbody id="jogok-lista"></tbody>
                     </table>
                 </div>
@@ -119,11 +121,8 @@
     <div id="edit-tag-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="color:var(--primary)">Tag Szerkesztése</h2>
-            <p><strong>Név:</strong></p>
-            <input type="text" id="edit-tag-nev">
-            <p><strong>Discord:</strong></p>
-            <input type="text" id="edit-tag-discord">
-            <p><strong>Rang:</strong></p>
+            <input type="text" id="edit-tag-nev" placeholder="Név">
+            <input type="text" id="edit-tag-discord" placeholder="Discord">
             <select id="edit-tag-rang"></select>
             <div style="display:flex; gap:10px; margin-top:20px">
                 <button class="btn" onclick="veglegesitTagSzerkesztes()">Mentés</button>
@@ -132,19 +131,34 @@
         </div>
     </div>
 
+    <div id="kassza-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modal-osszeg-display"></h2>
+            <select id="igazolas-tipus" onchange="valtsIgazolasTipus(this.value)">
+                <option value="link">Link (Imgur/Discord)</option>
+                <option value="szoveg">Megjegyzés</option>
+            </select>
+            <div id="igazolas-input-container">
+                <input type="text" id="kassza-bizonyitek" placeholder="https://...">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px">
+                <button class="btn" onclick="veglegesitTranzakcio()">Megerősítés</button>
+                <button class="btn" style="border:none; color:var(--text-muted)" onclick="zárKasszaModal()">Mégse</button>
+            </div>
+        </div>
+    </div>
+
     <div id="profil-modal" class="modal-overlay" onclick="this.style.display='none'">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 id="modal-nev" style="color:var(--primary); margin:0"></h2>
-            <p id="modal-rang" style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase"></p>
-            <p><strong>Discord elérhetőség:</strong> <span id="modal-discord"></span></p>
-            <div id="modal-leiras" style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px; margin-top:10px"></div>
-            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="document.getElementById('profil-modal').style.display='none'">Bezárás</button>
+            <h2 id="modal-nev"></h2>
+            <p id="modal-rang"></p>
+            <p>Discord: <span id="modal-discord"></span></p>
+            <div id="modal-leiras" style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px;"></div>
         </div>
     </div>
 
     <script>
-        let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null;
-        let ALL_RANGS = [];
+        let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [];
 
         async function apiFetch(url, options = {}) {
             const token = localStorage.getItem('klani_token');
@@ -157,14 +171,11 @@
         }
 
         async function bejelentkezes() {
-            const nev = document.getElementById('login-user').value;
-            const jelszo = document.getElementById('login-pass').value;
+            const nev = document.getElementById('login-user').value, jelszo = document.getElementById('login-pass').value;
             const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nev, jelszo}) });
-            const data = await res.json();
-            if (data.success) {
-                localStorage.setItem('klani_token', data.token);
-                location.reload();
-            } else document.getElementById('login-hiba').innerText = data.error;
+            const d = await res.json();
+            if (d.success) { localStorage.setItem('klani_token', d.token); location.reload(); }
+            else document.getElementById('login-hiba').innerText = d.error;
         }
 
         function tab(id, btn) {
@@ -179,20 +190,15 @@
             if (token) {
                 const decoded = JSON.parse(atob(token.split('.')[1]));
                 myUserId = decoded.id; myUserName = decoded.nev; myUserRang = decoded.rang; myPermissions = decoded;
-                
                 document.getElementById('logged-in-user').innerText = 'FELHASZNÁLÓ: ' + myUserName;
                 document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
 
-                const resJ = await apiFetch('/api/jogosultsagok');
-                ALL_RANGS = await resJ.json();
-
+                const resJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await resJ.json();
                 if (myPermissions.jog_kezel) { document.getElementById('nav-jogok').style.display = 'block'; fetchJogok(); }
                 document.getElementById('uj-hir-doboz').style.display = myPermissions.hir_iras ? 'block' : 'none';
-                document.getElementById('kassza-controls').style.display = myPermissions.kassza ? 'block' : 'none';
                 document.getElementById('tag-felvetel-box').style.display = myPermissions.tag_kezel ? 'block' : 'none';
-
                 fetchHirek(); fetchBalance(); fetchTagok(); fetchProfil();
             }
         };
@@ -201,80 +207,83 @@
             const res = await apiFetch('/api/tagok'); const tagok = await res.json();
             const s = document.getElementById('uj-tag-rang-select'); if(s) { s.innerHTML = ''; ALL_RANGS.forEach(j => s.innerHTML += `<option value="${j.rang}">${j.rang}</option>`); }
             const tbody = document.getElementById('tagok-lista'); tbody.innerHTML = '';
-            
             tagok.forEach(t => {
-                let muvelet = `<button class="btn" style="padding:2px 8px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">PROFIL</button>`;
+                let muv = `<button class="btn" style="padding:2px 8px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">PROFIL</button>`;
                 if(myPermissions.jog_kezel) {
-                    muvelet += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--success)" onclick="nyitTagSzerkesztes(${t.id}, '${t.nev}', '${t.discord || ''}', '${t.rang}')">SZERKESZTÉS</button>`;
-                    muvelet += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger)" onclick="tagTorles(${t.id})">🗑️</button>`;
+                    muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--success)" onclick="nyitTagSzerkesztes(${t.id},'${t.nev}','${t.discord}','${t.rang}')">SZERKESZTÉS</button>`;
+                    muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger)" onclick="tagTorles(${t.id})">🗑️</button>`;
                 }
-                tbody.innerHTML += `<tr><td>${t.nev}<br><small>${t.discord||'-'}</small></td><td>${t.rang}</td><td>${muvelet}</td></tr>`;
+                tbody.innerHTML += `<tr><td>${t.nev}<br><small>${t.discord||'-'}</small></td><td>${t.rang}</td><td>${muv}</td></tr>`;
             });
         }
 
-        function nyitTagSzerkesztes(id, nev, discord, rang) {
-            editTargetId = id;
-            document.getElementById('edit-tag-nev').value = nev;
-            document.getElementById('edit-tag-discord').value = discord;
-            const s = document.getElementById('edit-tag-rang');
-            s.innerHTML = ''; ALL_RANGS.forEach(r => s.innerHTML += `<option value="${r.rang}" ${r.rang===rang?'selected':''}>${r.rang}</option>`);
+        function nyitTagSzerkesztes(id, n, d, r) {
+            editTargetId = id; document.getElementById('edit-tag-nev').value = n; document.getElementById('edit-tag-discord').value = d;
+            const s = document.getElementById('edit-tag-rang'); s.innerHTML = ''; ALL_RANGS.forEach(x => s.innerHTML += `<option value="${x.rang}" ${x.rang===r?'selected':''}>${x.rang}</option>`);
             document.getElementById('edit-tag-modal').style.display = 'flex';
         }
 
         async function veglegesitTagSzerkesztes() {
-            const nev = document.getElementById('edit-tag-nev').value;
-            const discord = document.getElementById('edit-tag-discord').value;
-            const rang = document.getElementById('edit-tag-rang').value;
-            await apiFetch(`/api/tagok/${editTargetId}`, { method:'PUT', body:JSON.stringify({nev, discord, rang}) });
-            document.getElementById('edit-tag-modal').style.display = 'none';
-            fetchTagok();
-        }
-
-        async function megtekintProfil(id) {
-            const res = await apiFetch(`/api/profil/${id}`); const p = await res.json();
-            document.getElementById('modal-nev').innerText = p.nev; document.getElementById('modal-rang').innerText = p.rang; document.getElementById('modal-discord').innerText = p.discord || '-'; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-';
-            document.getElementById('profil-modal').style.display = 'flex';
+            const n = document.getElementById('edit-tag-nev').value, d = document.getElementById('edit-tag-discord').value, r = document.getElementById('edit-tag-rang').value;
+            await apiFetch(`/api/tagok/${editTargetId}`, { method:'PUT', body:JSON.stringify({nev:n, discord:d, rang:r}) });
+            document.getElementById('edit-tag-modal').style.display = 'none'; fetchTagok();
         }
 
         async function fetchJogok() {
             const res = await apiFetch('/api/jogosultsagok'); const jogok = await res.json();
             const tbody = document.getElementById('jogok-lista'); tbody.innerHTML = '';
             jogok.forEach(j => {
-                let torolBtn = j.rang !== 'DEV' ? `<button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button>` : '-';
+                let del = j.rang !== 'DEV' ? `<button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button>` : '-';
                 tbody.innerHTML += `<tr>
-                    <td><input type="text" value="${j.rang}" onchange="updateRang('${j.rang}','rang',this.value)" style="width:60px; margin:0"> (${j.prioritas})</td>
+                    <td><input type="text" value="${j.rang}" onchange="updateRang('${j.rang}','rang',this.value)" style="width:60px; margin:0"> 
+                        (<input type="number" value="${j.prioritas}" onchange="updateRang('${j.rang}','prioritas',this.value)" style="width:30px; margin:0">)</td>
                     <td><input type="checkbox" ${j.hir_iras?'checked':''} onchange="updateRang('${j.rang}','hir_iras',this.checked)"></td>
                     <td><input type="checkbox" ${j.hir_kezel?'checked':''} onchange="updateRang('${j.rang}','hir_kezel',this.checked)"></td>
                     <td><input type="checkbox" ${j.kassza?'checked':''} onchange="updateRang('${j.rang}','kassza',this.checked)"></td>
                     <td><input type="checkbox" ${j.tag_kezel?'checked':''} onchange="updateRang('${j.rang}','tag_kezel',this.checked)"></td>
                     <td><input type="checkbox" ${j.jog_kezel?'checked':''} onchange="updateRang('${j.rang}','jog_kezel',this.checked)"></td>
                     <td><input type="checkbox" ${j.nev_valtoztat?'checked':''} onchange="updateRang('${j.rang}','nev_valtoztat',this.checked)"></td>
-                    <td>${torolBtn}</td>
+                    <td>${del}</td>
                 </tr>`;
             });
         }
 
-        async function ujTagMentese() {
-            const nev = document.getElementById('uj-tag-nev').value, discord = document.getElementById('uj-tag-discord').value, rang = document.getElementById('uj-tag-rang-select').value;
-            await apiFetch('/api/tagok', { method:'POST', body:JSON.stringify({nev, discord, rang}) });
-            alert("Sikeres felvétel!"); fetchTagok();
+        function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
+        function inditTranzakcio(t) { 
+            const o = parseInt(document.getElementById('osszeg').value.replace(/\s/g, "")); if(!o) return;
+            aktualisTranzakcio = { tipus:t, osszeg:o };
+            document.getElementById('modal-osszeg-display').innerText = (t==='be'?'Befizetés: ':'Kivétel: ') + o.toLocaleString() + " $";
+            document.getElementById('kassza-modal').style.display = 'flex';
         }
-        
-        async function fetchProfil() {
-            const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json();
-            document.getElementById('profil-section').innerHTML = `<div class="card"><h2 style="color:var(--primary); margin:0;">Saját Profil</h2><div style="margin: 20px 0; line-height: 1.8;"><p><strong>Név:</strong> ${p.nev}</p><p><strong>Rang:</strong> ${p.rang}</p><p><strong>Discord elérhetőség:</strong> ${p.discord || 'Nincs megadva'}</p></div><p><strong>Leírás szerkesztése:</strong></p><textarea id="input-bemutatkozas" rows="6">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%" onclick="mentesProfil()">Mentés</button></div>`;
+        function valtsIgazolasTipus(v) { document.getElementById('igazolas-input-container').innerHTML = v==='link' ? '<input type="text" id="kassza-bizonyitek" placeholder="https://...">' : '<textarea id="kassza-bizonyitek" placeholder="Megjegyzés..."></textarea>'; }
+        async function veglegesitTranzakcio() { 
+            const b = document.getElementById('kassza-bizonyitek').value;
+            await apiFetch('/api/kassza', { method:'POST', body:JSON.stringify({...aktualisTranzakcio, bizonyitek:b, operator:myUserName}) });
+            location.reload(); 
+        }
+        function zárKasszaModal() { document.getElementById('kassza-modal').style.display='none'; }
+        async function fetchBalance() { 
+            const res = await apiFetch('/api/kassza'); const d = await res.json();
+            document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $';
+            const tbody = document.getElementById('kassza-log-lista'); tbody.innerHTML = '';
+            d.logs.forEach(l => {
+                const ig = l.bizonyitek?.startsWith('http') ? `<a href="${l.bizonyitek}" target="_blank" style="color:var(--primary)">LINK</a>` : (l.bizonyitek || '-');
+                tbody.innerHTML += `<tr><td>${new Date(l.datum).toLocaleDateString()}</td><td>${l.operator}</td><td style="color:${l.tipus==='be'?'var(--success)':'var(--danger)'}">${l.tipus.toUpperCase()}</td><td>${l.osszeg.toLocaleString()} $</td><td>${ig}</td></tr>`;
+            });
         }
 
-        async function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
-        function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); }
-        async function fetchHirek() { const res = await apiFetch('/api/hirek'); const h = await res.json(); const l = document.getElementById('hirek-lista'); l.innerHTML = ''; h.forEach(x => { let torolBtn = myPermissions.hir_kezel ? `<button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger); border:none" onclick="torolHir(${x.id})">🗑️</button>` : ''; l.innerHTML += `<div class="card"><div style="display:flex; justify-content:space-between"><strong>${x.cim}</strong>${torolBtn}</div><small>${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p>${x.tartalom}</p></div>`; }); }
-        async function posztolHir() { const cim = document.getElementById('hir-cim').value, tartalom = document.getElementById('hir-tartalom').value; await apiFetch('/api/hirek', { method:'POST', body:JSON.stringify({cim, tartalom}) }); location.reload(); }
+        async function letrehozRang() { await apiFetch('/api/jogosultsagok', { method:'POST', body:JSON.stringify({rang:document.getElementById('uj-rang-nev').value, prioritas:parseInt(document.getElementById('uj-rang-prio').value)}) }); fetchJogok(); }
+        async function updateRang(r, m, e) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method:'PUT', body:JSON.stringify({mezo:m, ertek:e}) }); }
+        async function torolRang(r) { if(confirm("Törlöd?")) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, {method:'DELETE'}); fetchJogok(); } }
+        async function fetchHirek() { const res = await apiFetch('/api/hirek'); const h = await res.json(); const l = document.getElementById('hirek-lista'); l.innerHTML = ''; h.forEach(x => { let del = myPermissions.hir_kezel ? `<button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger); border:none" onclick="torolHir(${x.id})">🗑️</button>` : ''; l.innerHTML += `<div class="card"><div style="display:flex; justify-content:space-between"><strong>${x.cim}</strong>${del}</div><small>${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p>${x.tartalom}</p></div>`; }); }
+        async function posztolHir() { await apiFetch('/api/hirek', { method:'POST', body:JSON.stringify({cim:document.getElementById('hir-cim').value, tartalom:document.getElementById('hir-tartalom').value}) }); location.reload(); }
         async function torolHir(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/hirek/${id}`, {method:'DELETE'}); fetchHirek(); } }
-        async function fetchBalance() { const res = await apiFetch('/api/kassza'); const d = await res.json(); document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $'; const tbody = document.getElementById('kassza-log-lista'); tbody.innerHTML = ''; d.logs.forEach(log => { const ig = log.bizonyitek?.startsWith('http') ? `<a href="${log.bizonyitek}" target="_blank" style="color:var(--primary)">LINK</a>` : (log.bizonyitek || '-'); tbody.innerHTML += `<tr><td>${new Date(log.datum).toLocaleDateString()}</td><td>${log.operator}</td><td style="color:${log.tipus==='be'?'var(--success)':'var(--danger)'}">${log.tipus.toUpperCase()}</td><td>${log.osszeg.toLocaleString()} $</td><td>${ig}</td></tr>`; }); }
-        async function updateRang(rang, mezo, ertek) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(rang)}`, { method:'PUT', body:JSON.stringify({mezo, ertek}) }); }
-        async function torolRang(rang) { if(confirm(`Törlöd?`)) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(rang)}`, {method:'DELETE'}); fetchJogok(); } }
+        async function ujTagMentese() { await apiFetch('/api/tagok', { method:'POST', body:JSON.stringify({nev:document.getElementById('uj-tag-nev').value, discord:document.getElementById('uj-tag-discord').value, rang:document.getElementById('uj-tag-rang-select').value}) }); alert("Kész!"); fetchTagok(); }
         async function tagTorles(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, {method:'DELETE'}); fetchTagok(); } }
-        async function mentesProfil() { const b = document.getElementById('input-bemutatkozas').value; await apiFetch(`/api/profil/${myUserId}`, { method:'PUT', body:JSON.stringify({bemutatkozas:b}) }); alert("Mentve!"); }
+        async function megtekintProfil(id) { const res = await apiFetch(`/api/profil/${id}`); const p = await res.json(); document.getElementById('modal-nev').innerText = p.nev; document.getElementById('modal-rang').innerText = p.rang; document.getElementById('modal-discord').innerText = p.discord || '-'; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-'; document.getElementById('profil-modal').style.display = 'flex'; }
+        async function fetchProfil() { const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json(); document.getElementById('profil-section').innerHTML = `<div class="card"><h2 style="color:var(--primary); margin:0;">Saját Profil</h2><div style="margin: 20px 0; line-height: 1.8;"><p><strong>Név:</strong> ${p.nev}</p><p><strong>Rang:</strong> ${p.rang}</p><p><strong>Discord elérhetőség:</strong> ${p.discord || 'Nincs megadva'}</p></div><p><strong>Leírás szerkesztése:</strong></p><textarea id="input-bemutatkozas" rows="6">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%" onclick="mentesProfil()">Mentés</button></div>`; }
+        async function mentesProfil() { await apiFetch(`/api/profil/${myUserId}`, { method:'PUT', body:JSON.stringify({bemutatkozas:document.getElementById('input-bemutatkozas').value}) }); alert("Mentve!"); }
+        function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); }
     </script>
 </body>
 </html>
