@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // --- AUTH & LOGIN ---
+        // --- LOGIN ---
         if (path === '/api/login' && method === 'POST') {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
@@ -28,46 +28,32 @@ export default async function handler(req, res) {
                 prio: jog?.prioritas || 99, 
                 jog_kezel: jog?.jog_kezel || false,
                 hir_kezel: jog?.hir_kezel || false,
-                nev_valtoztat: jog?.nev_valtoztat || false
+                nev_valtoztat: jog?.nev_valtoztat || false,
+                tag_kezel: jog?.tag_kezel || false
             }, JWT_SECRET);
             return res.json({ success: true, token });
         }
 
-        // --- KÖZLEMÉNYEK TÖRLÉSE ---
-        if (path.startsWith('/api/hirek/') && method === 'DELETE') {
-            if (!user?.hir_kezel) return res.status(403).json({ error: 'Nincs jogod a törléshez!' });
-            const id = path.split('/').pop();
-            await supabase.from('hirek').delete().eq('id', id);
-            return res.json({ success: true });
-        }
-
-        // --- TAGOK SZERKESZTÉSE (Név és Rang) ---
+        // --- TAGOK MÓDOSÍTÁSA (Szerkesztés Modalból) ---
         if (path.startsWith('/api/tagok/') && method === 'PUT') {
-            if (!user?.jog_kezel) return res.status(403).json({ error: 'Nincs jogod a szerkesztéshez!' });
             const id = path.split('/').pop();
-            const { nev, rang } = req.body;
+            const { nev, discord, rang } = req.body;
             
-            // Prioritás ellenőrzés (erősebbet nem szerkeszthet)
+            // Prioritás ellenőrzés
             const { data: target } = await supabase.from('tagok').select('rang').eq('id', id).single();
             const { data: tJog } = await supabase.from('jogosultsagok').select('prioritas').eq('rang', target.rang).single();
-            if (user.prio >= tJog.prioritas && user.rang !== 'DEV') return res.status(403).json({ error: 'Erősebb rangút nem szerkeszthetsz!' });
+            if (user.prio >= tJog.prioritas && user.rang !== 'DEV') return res.status(403).json({ error: 'Nincs jogod ehlerszintű tagot szerkeszteni!' });
 
             const updateData = {};
-            if (nev && user.nev_valtoztat) updateData.nev = nev;
+            if (nev && (user.nev_valtoztat || user.rang === 'DEV')) updateData.nev = nev;
+            if (discord) updateData.discord = discord;
             if (rang) updateData.rang = rang;
 
             await supabase.from('tagok').update(updateData).eq('id', id);
             return res.json({ success: true });
         }
 
-        // --- JELSZÓCSERE ---
-        if (path === '/api/jelszocsere' && method === 'POST') {
-            const { userId, ujJelszo } = req.body;
-            await supabase.from('tagok').update({ jelszo: ujJelszo, elso_belepes: false }).eq('id', userId);
-            return res.json({ success: true });
-        }
-
-        // --- TAGOK LISTÁJA ÉS FELVÉTELE ---
+        // --- TAGOK LISTÁJA, FELVÉTELE ÉS TÖRLÉSE ---
         if (path === '/api/tagok') {
             if (method === 'GET') {
                 const { data } = await supabase.from('tagok').select('id, nev, discord, rang').order('nev', { ascending: true });
@@ -87,77 +73,24 @@ export default async function handler(req, res) {
             return res.json({ success: true });
         }
 
-        // --- PROFIL ---
-        if (path.startsWith('/api/profil/')) {
-            const id = path.split('/').pop();
-            if (method === 'GET') {
-                const { data } = await supabase.from('tagok').select('nev, rang, discord, bemutatkozas').eq('id', id).single();
-                return res.json(data || {});
-            }
-            if (method === 'PUT') {
-                const { bemutatkozas } = req.body;
-                await supabase.from('tagok').update({ bemutatkozas }).eq('id', id);
-                return res.json({ success: true });
-            }
-        }
-
-        // --- HÍREK ---
-        if (path === '/api/hirek') {
-            if (method === 'GET') {
-                const { data } = await supabase.from('hirek').select('*').order('datum', { ascending: false });
-                return res.json(data || []);
-            }
-            if (method === 'POST') {
-                const { cim, tartalom } = req.body;
-                await supabase.from('hirek').insert([{ cim, tartalom, iro: user?.nev || 'Ismeretlen' }]);
-                return res.json({ success: true });
-            }
-        }
-
-        // --- KASSZA ---
-        if (path === '/api/kassza') {
-            if (method === 'GET') {
-                const { data: logs } = await supabase.from('kassza_log').select('*').order('datum', { ascending: false }).limit(20);
-                const { data: all } = await supabase.from('kassza_log').select('osszeg, tipus');
-                const balance = all ? all.reduce((acc, curr) => curr.tipus === 'be' ? acc + curr.osszeg : acc - curr.osszeg, 0) : 0;
-                return res.json({ balance, logs: logs || [] });
-            }
-            if (method === 'POST') {
-                const { tipus, osszeg, operator, bizonyitek } = req.body;
-                await supabase.from('kassza_log').insert([{ tipus, osszeg, operator, bizonyitek }]);
-                return res.json({ success: true });
-            }
-        }
-
-        // --- RANGOK (JOGOK) ---
-        if (path === '/api/jogosultsagok') {
-            if (method === 'GET') {
-                const { data } = await supabase.from('jogosultsagok').select('*').order('prioritas', { ascending: true });
-                return res.json(data || []);
-            }
-            if (method === 'POST') {
-                const { rang, prioritas } = req.body;
-                await supabase.from('jogosultsagok').insert([{ rang, prioritas }]);
-                return res.json({ success: true });
-            }
-        }
-
-        if (path.startsWith('/api/jogosultsagok/') && method === 'PUT') {
-            const rangNev = decodeURIComponent(path.split('/').pop());
-            const { mezo, ertek } = req.body;
-            const updateData = {}; updateData[mezo] = ertek;
-            await supabase.from('jogosultsagok').update(updateData).eq('rang', rangNev);
-            return res.json({ success: true });
-        }
-
+        // --- RANGOK TÖRLÉSE (DEV VÉDELEM) ---
         if (path.startsWith('/api/jogosultsagok/') && method === 'DELETE') {
             const rangNev = decodeURIComponent(path.split('/').pop());
+            if (rangNev === 'DEV') return res.status(400).json({ error: 'A DEV rang nem törölhető!' });
             await supabase.from('jogosultsagok').delete().eq('rang', rangNev);
             return res.json({ success: true });
         }
 
+        // --- JELSZÓCSERE, PROFIL, HÍREK, KASSZA, RANGOK GET/PUT ---
+        // (A korábbi funkciók maradjanak benne, a logikát az előzőek alapján másold vissza)
+        if (path === '/api/jelszocsere' && method === 'POST') { const { userId, ujJelszo } = req.body; await supabase.from('tagok').update({ jelszo: ujJelszo, elso_belepes: false }).eq('id', userId); return res.json({ success: true }); }
+        if (path.startsWith('/api/profil/')) { const id = path.split('/').pop(); if (method === 'GET') { const { data } = await supabase.from('tagok').select('*').eq('id', id).single(); return res.json(data || {}); } if (method === 'PUT') { const { bemutatkozas } = req.body; await supabase.from('tagok').update({ bemutatkozas }).eq('id', id); return res.json({ success: true }); } }
+        if (path === '/api/hirek') { if (method === 'GET') { const { data } = await supabase.from('hirek').select('*').order('datum', { ascending: false }); return res.json(data || []); } if (method === 'POST') { const { cim, tartalom } = req.body; await supabase.from('hirek').insert([{ cim, tartalom, iro: user?.nev || 'Ismeretlen' }]); return res.json({ success: true }); } }
+        if (path.startsWith('/api/hirek/') && method === 'DELETE') { await supabase.from('hirek').delete().eq('id', path.split('/').pop()); return res.json({ success: true }); }
+        if (path === '/api/kassza') { if (method === 'GET') { const { data: all } = await supabase.from('kassza_log').select('osszeg, tipus'); const { data: logs } = await supabase.from('kassza_log').select('*').order('datum', { ascending: false }).limit(20); const balance = all ? all.reduce((acc, curr) => curr.tipus === 'be' ? acc + curr.osszeg : acc - curr.osszeg, 0) : 0; return res.json({ balance, logs: logs || [] }); } if (method === 'POST') { const { tipus, osszeg, operator, bizonyitek } = req.body; await supabase.from('kassza_log').insert([{ tipus, osszeg, operator, bizonyitek }]); return res.json({ success: true }); } }
+        if (path === '/api/jogosultsagok') { if (method === 'GET') { const { data } = await supabase.from('jogosultsagok').select('*').order('prioritas', { ascending: true }); return res.json(data || []); } if (method === 'POST') { const { rang, prioritas } = req.body; await supabase.from('jogosultsagok').insert([{ rang, prioritas }]); return res.json({ success: true }); } }
+        if (path.startsWith('/api/jogosultsagok/') && method === 'PUT') { const rangNev = decodeURIComponent(path.split('/').pop()); const { mezo, ertek } = req.body; const updateData = {}; updateData[mezo] = ertek; await supabase.from('jogosultsagok').update(updateData).eq('rang', rangNev); return res.json({ success: true }); }
+
         res.status(404).json({ error: 'Endpoint not found' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 }
