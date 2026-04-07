@@ -256,7 +256,50 @@
         function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
         function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); }
         async function fetchHirek() { const res = await apiFetch('/api/hirek'); const h = await res.json(); const l = document.getElementById('hirek-lista'); l.innerHTML = ''; h.forEach(x => { l.innerHTML += `<div class="card"><strong>${x.cim}</strong><br><small>${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p>${x.tartalom}</p></div>`; }); }
-        async function fetchBalance() { const res = await apiFetch('/api/kassza'); const d = await res.json(); document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $'; }
+async function fetchBalance() {
+    const res = await apiFetch('/api/kassza');
+    const d = await res.json();
+    
+    // Egyenleg megjelenítése
+    document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $';
+    
+    // Napló (táblázat) frissítése
+    const tbody = document.getElementById('kassza-log-lista');
+    tbody.innerHTML = '';
+    d.logs.forEach(log => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${new Date(log.datum).toLocaleString()}</td>
+                <td>${log.operator}</td>
+                <td style="color: ${log.tipus === 'be' ? 'var(--success)' : 'var(--danger)'}">${log.tipus === 'be' ? 'BEVÉTEL' : 'KIADÁS'}</td>
+                <td>${log.osszeg.toLocaleString()} $</td>
+                <td><small>Terminal</small></td>
+            </tr>`;
+    });
+}
+
+async function inditTranzakcio(tipus) {
+    const input = document.getElementById('osszeg');
+    const osszegStr = input.value.replace(/\s/g, ""); // Szóközök eltávolítása
+    const osszeg = parseInt(osszegStr);
+
+    if (isNaN(osszeg) || osszeg <= 0) return alert("Kérlek adj meg egy érvényes összeget!");
+
+    const res = await apiFetch('/api/kassza', {
+        method: 'POST',
+        body: JSON.stringify({
+            tipus: tipus,
+            osszeg: osszeg,
+            operator: myUserName // A bejelentkezett felhasználó neve
+        })
+    });
+
+    if (res) {
+        input.value = '';
+        fetchBalance(); // Frissítjük az egyenleget és a listát
+        alert("Tranzakció sikeres!");
+    }
+}
         async function fetchProfil() { const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json(); document.getElementById('display-nev').innerText = p.nev; document.getElementById('display-rang').innerText = p.rang; document.getElementById('input-bemutatkozas').value = p.bemutatkozas || ''; }
         async function mentesProfil() { const b = document.getElementById('input-bemutatkozas').value; await apiFetch(`/api/profil/${myUserId}`, {method:'PUT', body:JSON.stringify({bemutatkozas:b})}); alert("Mentve!"); }
         async function posztolHir() {
