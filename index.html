@@ -28,8 +28,8 @@
     <div id="login-screen" class="auth-screen active" style="height:100vh; display:flex; align-items:center; justify-content:center;">
         <div class="card" style="width: 350px; text-align: center; border: 2px solid var(--primary);">
             <h2 style="color: var(--primary);">Klani E Detit</h2>
-            <input type="text" id="login-user" placeholder="FELHASZNÁLÓ NÉV">
-            <input type="password" id="login-pass" placeholder="JELSZÓ">
+            <input type="text" id="login-user" placeholder="Felhasználó">
+            <input type="password" id="login-pass" placeholder="Jelszó">
             <button class="btn" style="width: 100%;" onclick="bejelentkezes()">Bejelentkezés</button>
             <p id="login-hiba" style="color: var(--danger); margin-top: 1rem;"></p>
         </div>
@@ -49,14 +49,14 @@
             <button class="nav-btn active-nav" onclick="tab('hirek-section', this)">Közlemények</button>
             <button class="nav-btn" onclick="tab('kassza-section', this)">Frakció számla</button>
             <button class="nav-btn" onclick="tab('tagok-section', this)">Tagok</button>
-            <button class="nav-btn" onclick="tab('akcio-section', this)">Akciók</button>
+            <button class="nav-btn" onclick="tab('akcio-section', this)">Akció</button>
             <button class="nav-btn" onclick="tab('profil-section', this)">Saját Profil</button>
             <button class="nav-btn" id="nav-jogok" style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN panel</button>
         </nav>
 
         <div class="container">
             <div id="password-screen" class="section card" style="max-width:400px; margin:auto; text-align:center;">
-                <h2>Üdvözlünk! Válts jelszót:</h2>
+                <h2>Üdvözöllek! Válts jelszót:</h2>
                 <input type="password" id="new-pass" placeholder="Új biztonsági kód">
                 <button class="btn" style="width:100%" onclick="jelszocsere()">Kód Mentése</button>
             </div>
@@ -73,7 +73,10 @@
 
             <div id="akcio-section" class="section">
                 <div id="uj-akcio-box" class="card" style="display:none; border-color:var(--accent);">
-                    <h3 style="color:var(--accent)">Új Akció Szervezése</h3>
+                    <h3 style="color:var(--accent); display:flex; justify-content:space-between; align-items:center;">
+                        Új Akció Szervezése
+                        <button id="szezon-zaras-btn" class="btn btn-danger" style="display:none; padding:0.4rem 0.8rem; font-size:0.7rem; border-color:var(--danger); color:var(--danger);" onclick="szezonzaras()">Szezon Zárása és Nullázás</button>
+                    </h3>
                     <div style="display:flex; gap:10px;">
                         <select id="uj-akcio-tipus" style="flex:1; margin-bottom:0;">
                             <option value="ATM">ATM</option>
@@ -81,9 +84,14 @@
                             <option value="SZIGET">SZIGET</option>
                             <option value="KÚT">KÚT</option>
                         </select>
-                        <button class="btn" style="border-color:var(--accent); color:var(--accent);" onclick="letrehozAkcio()">Esemény Indítása</button>
+                        <button class="btn" style="border-color:var(--accent); color:var(--accent);" onclick="letrehozAkcio()">AKCIÓ Indítása</button>
                     </div>
                 </div>
+
+                <div class="card" style="padding-bottom:10px;">
+                    <input type="text" id="akcio-kereso" placeholder="Keresés (Név alapján a szervezők és résztvevők között)..." oninput="szuresAkciok(this.value)">
+                </div>
+
                 <div id="akciok-lista"></div>
             </div>
 
@@ -93,7 +101,7 @@
                     <div id="kassza-controls" style="display:none;">
                         <input type="text" id="osszeg" placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)">
                         <button class="btn" onclick="inditTranzakcio('be')">Befizetés</button>
-                        <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger);" onclick="inditTranzakcio('ki')">Kivétel</button>
+                        <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger);" onclick="inditTranzakcio('ki')">Kifizetés</button>
                     </div>
                 </div>
                 <div class="card">
@@ -130,7 +138,7 @@
                         <button class="btn" onclick="letrehozRang()">Létrehozás</button>
                     </div>
                     <table style="margin-top:20px; min-width: 800px;">
-                        <thead><tr><th>Rang (P)</th><th>Hír+</th><th>Hír-K</th><th>Kassza</th><th>Tag+</th><th>ADMIN</th><th>Név</th><th>Akció</th><th>Műv</th></tr></thead>
+                        <thead><tr><th>Rang (P)</th><th>Hír+</th><th>Hír-K</th><th>Kassza</th><th>Tag+</th><th>ADMIN</th><th>Név</th><th>Akció</th><th>L. Akc.</th><th>Műv</th></tr></thead>
                         <tbody id="jogok-lista"></tbody>
                     </table>
                 </div>
@@ -176,8 +184,8 @@
             <p id="modal-rang" style="color:var(--primary); font-weight:bold;"></p>
             <p>DC: <span id="modal-discord"></span></p>
             <div style="margin: 15px 0; display:flex; gap:20px; color:var(--accent);">
-                <div><strong>Szervezett Akciók:</strong> <span id="modal-szervezett">0</span></div>
-                <div><strong>Résztvett Akciók:</strong> <span id="modal-resztvett">0</span></div>
+                <div><strong>Szervezett:</strong> <span id="modal-szervezett">0</span></div>
+                <div><strong>Résztvett:</strong> <span id="modal-resztvett">0</span></div>
             </div>
             <div id="modal-leiras" style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px;"></div>
             <button class="btn" style="width: 100%; margin-top: 20px;" onclick="document.getElementById('profil-modal').style.display='none'">Bezárás</button>
@@ -185,7 +193,7 @@
     </div>
 
     <script>
-        let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [], ALL_TAGOK = [];
+        let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [], ALL_TAGOK = [], ALL_AKCIOK = [];
         
         async function apiFetch(url, options = {}) {
             const token = localStorage.getItem('klani_token');
@@ -228,6 +236,7 @@
                 const resJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await resJ.json();
                 if (myPermissions.jog_admin) { document.getElementById('nav-jogok').style.display = 'block'; fetchJogok(); }
                 if (myPermissions.jog_akcio) { document.getElementById('uj-akcio-box').style.display = 'block'; }
+                if (myUserRang === 'DEV') { document.getElementById('szezon-zaras-btn').style.display = 'block'; }
                 
                 document.getElementById('uj-hir-doboz').style.display = myPermissions.hir_iras ? 'block' : 'none';
                 document.getElementById('kassza-controls').style.display = myPermissions.kassza ? 'block' : 'none';
@@ -240,43 +249,112 @@
         // --- AKCIÓ FUNKCIÓK ---
         async function fetchAkciok() {
             const res = await apiFetch('/api/akcio');
-            const akciok = await res.json();
-            const l = document.getElementById('akciok-lista');
-            l.innerHTML = '';
+            ALL_AKCIOK = await res.json();
+            renderAkciok(ALL_AKCIOK);
+        }
+
+        function renderAkciok(lista) {
+            const container = document.getElementById('akciok-lista');
+            container.innerHTML = '';
             
-            akciok.forEach(a => {
-                let resztvevokHTML = a.resztvevok.map(r => `<li>${r.ic_nev || r.nev} - <small>${new Date(r.ido).toLocaleTimeString()}</small></li>`).join('');
-                let gombok = '';
+            const aktivak = lista.filter(a => a.aktiv && !a.archivalva);
+            const lezartak = lista.filter(a => !a.aktiv && !a.archivalva);
+            const archiváltak = lista.filter(a => a.archivalva);
+
+            let html = '';
+
+            // AKTÍV AKCIÓK
+            html += `<h3 style="color:var(--success); border-bottom:1px solid var(--success); padding-bottom:5px;">Aktív Akciók</h3>`;
+            if (aktivak.length === 0) {
+                html += `<p style="color:var(--text-muted); text-align:center; padding:20px; background:rgba(0,0,0,0.3);">Nincsen jelenleg akció.</p>`;
+            } else {
+                aktivak.forEach(a => html += generalAkcioCard(a));
+            }
+
+            // LEZÁRT AKCIÓK (Joghoz kötve)
+            if (myPermissions.jog_lezart_akcio || myUserRang === 'DEV') {
+                html += `<h3 style="color:var(--danger); border-bottom:1px solid var(--danger); padding-bottom:5px; margin-top:30px;">Lezárt Akciók</h3>`;
+                if (lezartak.length === 0) html += `<p style="color:var(--text-muted)">Nincs megjeleníthető lezárt akció.</p>`;
+                else lezartak.forEach(a => html += generalAkcioCard(a));
                 
-                if (a.aktiv) {
-                    const benneVan = a.resztvevok.find(r => r.id === myUserId);
-                    if (!benneVan) gombok += `<button class="btn" style="padding:0.5rem 1rem;" onclick="csatlakozikAkcio(${a.id})">Csatlakozás</button>`;
-                    else gombok += `<span style="color:var(--success); font-weight:bold; margin-right:10px;">Már csatlakoztál!</span>`;
-                    
-                    if (myPermissions.jog_akcio || myUserRang === 'DEV') {
-                        gombok += ` <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger); padding:0.5rem 1rem;" onclick="zarAkcio(${a.id})">ZÁRÁS</button>`;
-                    }
+                // ARCHÍVUM (Gombbal lenyitható, ha van jogosultság)
+                html += `<div style="margin-top:40px; border-top: 1px dashed var(--primary-border); padding-top:20px;">
+                            <button class="btn" style="width:100%; border-color:var(--text-muted); color:var(--text-muted);" onclick="toggleArchivum()">ARCHIVÁLT AKCIÓK MEGNYITÁSA / BEZÁRÁSA</button>
+                         </div>`;
+                html += `<div id="archivum-container" style="display:none; margin-top:20px;">`;
+                html += `<h3 style="color:var(--text-muted)">Archivált Akciók</h3>`;
+                if (archiváltak.length === 0) html += `<p style="color:var(--text-muted)">Az archívum jelenleg üres.</p>`;
+                else archiváltak.forEach(a => html += generalAkcioCard(a));
+                html += `</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function generalAkcioCard(a) {
+            let resztvevokHTML = a.resztvevok.map(r => `<li>${r.ic_nev || r.nev} - <small>${new Date(r.ido).toLocaleTimeString()}</small></li>`).join('');
+            let gombok = '';
+            
+            if (a.aktiv && !a.archivalva) {
+                const benneVan = a.resztvevok.find(r => r.id === myUserId);
+                
+                if (a.szervezo_id === myUserId) {
+                    gombok += `<span style="color:var(--accent); font-weight:bold; margin-right:10px;">Te vagy a szervező</span>`;
+                } else if (!benneVan) {
+                    gombok += `<button class="btn" style="padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="csatlakozikAkcio(${a.id})">Csatlakozás</button>`;
                 } else {
-                    gombok = `<span style="color:var(--danger); font-weight:bold;">[ LEZÁRT AKCIÓ ]</span>`;
+                    gombok += `<span style="color:var(--success); font-weight:bold; margin-right:10px;">Csatlakoztál!</span>`;
                 }
                 
-                l.innerHTML += `
-                <div class="card" style="border: 2px solid ${a.aktiv ? 'var(--accent)' : 'var(--text-muted)'}">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                        <h3 style="margin:0; color:var(--primary)">[ ${a.tipus} ] - Szervező: ${a.szervezo_nev}</h3>
-                        <div>${gombok}</div>
-                    </div>
-                    <p style="color:var(--text-muted); margin-bottom:5px;"><small>${new Date(a.datum).toLocaleString()}</small></p>
-                    <div style="margin-top:10px;">
-                        <strong>Résztvevők (${a.resztvevok.length} fő):</strong>
-                        <ul style="margin-top:5px; padding-left:20px; line-height:1.5;">${resztvevokHTML || '<li>Még senki nem csatlakozott.</li>'}</ul>
-                    </div>
-                </div>`;
-            });
+                if (myPermissions.jog_akcio || myUserRang === 'DEV') {
+                    gombok += ` <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger); padding:0.4rem 0.8rem; font-size:0.8rem;" onclick="zarAkcio(${a.id})">ZÁRÁS</button>`;
+                }
+            } else if (a.archivalva) {
+                gombok = `<span style="color:var(--text-muted); font-weight:bold;">[ ARCHIVÁLVA ]</span>`;
+            } else {
+                gombok = `<span style="color:var(--danger); font-weight:bold;">[ LEZÁRT ]</span>`;
+            }
+            
+            return `
+            <div class="card" style="border: 2px solid ${a.aktiv ? 'var(--accent)' : 'var(--card-bg)'}; background: ${a.aktiv ? 'var(--card-bg)' : 'rgba(0,0,0,0.4)'}; margin-bottom: 15px; padding: 1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <h3 style="margin:0; color:${a.aktiv ? 'var(--primary)' : 'var(--text-muted)'}">[ ${a.tipus} ] - Szervező: ${a.szervezo_nev}</h3>
+                    <div>${gombok}</div>
+                </div>
+                <p style="color:var(--text-muted); margin-bottom:5px;"><small>${new Date(a.datum).toLocaleString()}</small></p>
+                <div style="margin-top:10px;">
+                    <strong>Résztvevők (${a.resztvevok.length} fő):</strong>
+                    <ul style="margin-top:5px; padding-left:20px; line-height:1.5;">${resztvevokHTML || '<li>Még senki nem csatlakozott.</li>'}</ul>
+                </div>
+            </div>`;
         }
+
+        function szuresAkciok(val) {
+            const v = val.toLowerCase();
+            if (!v) { renderAkciok(ALL_AKCIOK); return; }
+            const szurt = ALL_AKCIOK.filter(a => {
+                const szervezMatch = (a.szervezo_nev || '').toLowerCase().includes(v);
+                const resztvevoMatch = a.resztvevok.some(r => (r.nev || '').toLowerCase().includes(v) || (r.ic_nev || '').toLowerCase().includes(v));
+                return szervezMatch || resztvevoMatch;
+            });
+            renderAkciok(szurt);
+        }
+
+        function toggleArchivum() {
+            const arch = document.getElementById('archivum-container');
+            arch.style.display = arch.style.display === 'none' ? 'block' : 'none';
+        }
+
         async function letrehozAkcio() { const t = document.getElementById('uj-akcio-tipus').value; await apiFetch('/api/akcio', { method:'POST', body:JSON.stringify({tipus: t}) }); fetchAkciok(); }
         async function csatlakozikAkcio(id) { await apiFetch(`/api/akcio/${id}/join`, { method:'PUT' }); fetchAkciok(); }
-        async function zarAkcio(id) { if(confirm("Lezárod az akciót? (Utána csak a DEV fogja látni)")) { await apiFetch(`/api/akcio/${id}/close`, { method:'PUT' }); fetchAkciok(); } }
+        async function zarAkcio(id) { if(confirm("Biztosan lezárod ezt az akciót?")) { await apiFetch(`/api/akcio/${id}/close`, { method:'PUT' }); fetchAkciok(); } }
+        async function szezonzaras() {
+            if(confirm("FIGYELEM!\n\nEzzel MINDEN eddigi aktív és lezárt akció az Archívumba kerül, és MINDEN tag statisztikája NULLÁZÓDIK!\n\nBiztosan folytatod?")) {
+                await apiFetch('/api/akcio_archiv', { method:'POST' });
+                alert("Szezon lezárva, archívumba mentve és számlálók nullázva!");
+                fetchAkciok(); fetchProfil();
+            }
+        }
 
         // --- PROFIL ---
         async function megtekintProfil(id) {
@@ -345,12 +423,12 @@
             const res = await apiFetch('/api/jogosultsagok'); const jogok = await res.json(); const tbody = document.getElementById('jogok-lista'); tbody.innerHTML = '';
             jogok.forEach(j => {
                 let rowContent;
-                if (j.rang === 'DEV') { rowContent = `<td>DEV (${j.prioritas})</td><td colspan="7" style="text-align:center; color:var(--accent); font-weight:800;">[ ÉRÍNHETETLEN ]</td><td>-</td>`; } 
-                else { rowContent = `<td><input type="text" id="rang-name-${j.rang}" value="${j.rang}" style="width:60px; margin:0"> (<input type="number" id="rang-prio-${j.rang}" value="${j.prioritas}" style="width:30px; margin:0">)</td><td><input type="checkbox" ${j.hir_iras?'checked':''} onchange="mentesRang('${j.rang}', 'hir_iras', this.checked)"></td><td><input type="checkbox" ${j.hir_kezel?'checked':''} onchange="mentesRang('${j.rang}', 'hir_kezel', this.checked)"></td><td><input type="checkbox" ${j.kassza?'checked':''} onchange="mentesRang('${j.rang}', 'kassza', this.checked)"></td><td><input type="checkbox" ${j.tag_kezel?'checked':''} onchange="mentesRang('${j.rang}', 'tag_kezel', this.checked)"></td><td><input type="checkbox" ${j.jog_admin?'checked':''} onchange="mentesRang('${j.rang}', 'jog_admin', this.checked)"></td><td><input type="checkbox" ${j.nev_valtoztat?'checked':''} onchange="mentesRang('${j.rang}', 'nev_valtoztat', this.checked)"></td><td><input type="checkbox" ${j.jog_akcio?'checked':''} onchange="mentesRang('${j.rang}', 'jog_akcio', this.checked)"></td><td><button class="btn" style="padding:2px 5px; font-size:0.6rem; color:var(--success); border-color:var(--success);" onclick="frissitRangSzoveg('${j.rang}')">OK</button> <button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button></td>`; }
+                if (j.rang === 'DEV') { rowContent = `<td>DEV (${j.prioritas})</td><td colspan="8" style="text-align:center; color:var(--accent); font-weight:800;">[ ÉRÍNHETETLEN ]</td><td>-</td>`; } 
+                else { rowContent = `<td><input type="text" id="rang-name-${j.rang}" value="${j.rang}" style="width:60px; margin:0"> (<input type="number" id="rang-prio-${j.rang}" value="${j.prioritas}" style="width:30px; margin:0">)</td><td><input type="checkbox" ${j.hir_iras?'checked':''} onchange="mentesRang('${j.rang}', 'hir_iras', this.checked)"></td><td><input type="checkbox" ${j.hir_kezel?'checked':''} onchange="mentesRang('${j.rang}', 'hir_kezel', this.checked)"></td><td><input type="checkbox" ${j.kassza?'checked':''} onchange="mentesRang('${j.rang}', 'kassza', this.checked)"></td><td><input type="checkbox" ${j.tag_kezel?'checked':''} onchange="mentesRang('${j.rang}', 'tag_kezel', this.checked)"></td><td><input type="checkbox" ${j.jog_admin?'checked':''} onchange="mentesRang('${j.rang}', 'jog_admin', this.checked)"></td><td><input type="checkbox" ${j.nev_valtoztat?'checked':''} onchange="mentesRang('${j.rang}', 'nev_valtoztat', this.checked)"></td><td><input type="checkbox" ${j.jog_akcio?'checked':''} onchange="mentesRang('${j.rang}', 'jog_akcio', this.checked)"></td><td><input type="checkbox" ${j.jog_lezart_akcio?'checked':''} onchange="mentesRang('${j.rang}', 'jog_lezart_akcio', this.checked)"></td><td><button class="btn" style="padding:2px 5px; font-size:0.6rem; color:var(--success); border-color:var(--success);" onclick="frissitRangSzoveg('${j.rang}')">OK</button> <button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button></td>`; }
                 tbody.innerHTML += `<tr>${rowContent}</tr>`;
             });
         }
-        async function frissitRangSzoveg(r) { const ujNev = document.getElementById(`rang-name-${r}`).value; await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method:'PUT', body:JSON.stringify({ rang: ujNev }) }); alert("OK"); fetchJogok(); }
+        async function frissitRangSzoveg(r) { const ujNev = document.getElementById(`rang-name-${r}`).value; const ujPrio = document.getElementById(`rang-prio-${r}`).value; await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method:'PUT', body:JSON.stringify({ rang: ujNev, prioritas: parseInt(ujPrio) }) }); alert("OK"); fetchJogok(); }
         async function mentesRang(r, m, e) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method:'PUT', body:JSON.stringify({ [m]: e }) }); }
         
         // --- EGYÉB ---
@@ -364,7 +442,6 @@
         async function jelszocsere() { await apiFetch('/api/jelszocsere', { method: 'POST', body: JSON.stringify({ userId: window.tempId, ujJelszo: document.getElementById('new-pass').value }) }); alert("Sikeres! Jelentkezz be újra."); location.reload(); }
         function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); }
         
-        // Auto-frissítés bekapcsolva (30 másodpercenként)
         setInterval(() => {
             if (localStorage.getItem('klani_token')) { fetchAkciok(); fetchBalance(); fetchTagok(); }
         }, 30000);

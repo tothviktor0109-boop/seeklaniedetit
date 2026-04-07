@@ -41,7 +41,8 @@ export default async function handler(req, res) {
                 tag_kezel: isDev || jog?.tag_kezel || false, 
                 kassza: isDev || jog?.kassza || false, 
                 hir_iras: isDev || jog?.hir_iras || false,
-                jog_akcio: isDev || jog?.jog_akcio || false
+                jog_akcio: isDev || jog?.jog_akcio || false,
+                jog_lezart_akcio: isDev || jog?.jog_lezart_akcio || false
             }, JWT_SECRET);
             return res.json({ success: true, token });
         }
@@ -49,31 +50,35 @@ export default async function handler(req, res) {
         // --- AKCIÓK (ESEMÉNYEK) ---
         if (path === '/api/akcio') {
             if (method === 'GET') {
-                let query = supabase.from('akciok').select('*').order('datum', { ascending: false });
-                if (user.rang !== 'DEV') query = query.eq('aktiv', true); // DEV mindent lát, többiek csak az aktívat
-                const { data } = await query;
+                const { data } = await supabase.from('akciok').select('*').order('datum', { ascending: false });
+                
+                // Ha nincs joga lezárt/archivált akciókhoz, csak az aktívakat küldjük
+                if (user.rang !== 'DEV' && !user.jog_lezart_akcio) {
+                    return res.json(data.filter(a => a.aktiv && !a.archivalva) || []);
+                }
                 return res.json(data || []);
             }
             if (method === 'POST') {
-                if (!user.jog_akcio) return res.status(403).json({error: 'Nincs jogod akciót szervezni!'});
+                if (!user.jog_akcio && user.rang !== 'DEV') return res.status(403).json({error: 'Nincs jogod akciót szervezni!'});
                 const { tipus } = req.body;
                 await supabase.from('akciok').insert([{ tipus, szervezo_id: user.id, szervezo_nev: user.ic_nev || user.nev }]);
                 
-                // Szervező statisztikájának növelése
                 const { data: tagData } = await supabase.from('tagok').select('akcio_szervezett').eq('id', user.id).single();
                 await supabase.from('tagok').update({ akcio_szervezett: (tagData.akcio_szervezett || 0) + 1 }).eq('id', user.id);
                 return res.json({ success: true });
             }
         }
 
-        if (path.startsWith('/api/akcio/')) {
+        // --- AKCIÓ CSATLAKOZÁS ÉS ZÁRÁS ---
+        if (path.startsWith('/api/akcio/') && !path.includes('archiválás')) {
             const parts = path.split('/');
             const id = parts[3];
             const action = parts[4]; // join vagy close
 
             if (method === 'PUT' && action === 'join') {
-                const { data: akcio } = await supabase.from('akciok').select('resztvevok, aktiv').eq('id', id).single();
+                const { data: akcio } = await supabase.from('akciok').select('resztvevok, aktiv, szervezo_id').eq('id', id).single();
                 if (!akcio.aktiv) return res.status(400).json({error: 'Az akció már lezárult!'});
+                if (akcio.szervezo_id === user.id) return res.status(400).json({error: 'Szervezőként nem tudsz külön csatlakozni!'});
                 
                 let resztvevok = akcio.resztvevok || [];
                 if (resztvevok.find(r => r.id === user.id)) return res.status(400).json({error: 'Már csatlakoztál!'});
@@ -81,7 +86,6 @@ export default async function handler(req, res) {
                 resztvevok.push({ id: user.id, nev: user.nev, ic_nev: user.ic_nev, ido: new Date().toISOString() });
                 await supabase.from('akciok').update({ resztvevok }).eq('id', id);
 
-                // Résztvevő statisztikájának növelése
                 const { data: tagData } = await supabase.from('tagok').select('akcio_resztvett').eq('id', user.id).single();
                 await supabase.from('tagok').update({ akcio_resztvett: (tagData.akcio_resztvett || 0) + 1 }).eq('id', user.id);
                 return res.json({ success: true });
@@ -91,6 +95,19 @@ export default async function handler(req, res) {
                 await supabase.from('akciok').update({ aktiv: false }).eq('id', id);
                 return res.json({ success: true });
             }
+        }
+
+        // --- SZEZON NULLÁZÁSA ÉS ARCHIVÁLÁS (CSAK DEV) ---
+        if (path === '/api/akcio_archiv' && method === 'POST') {
+            if (user.rang !== 'DEV') return res.status(403).json({ error: 'Csak DEV nullázhatja az akciókat!' });
+            
+            // 1. Minden eddigi (nem archivált) akciót archiválunk és lezárunk
+            await supabase.from('akciok').update({ archivalva: true, aktiv: false }).eq('archivalva', false);
+            
+            // 2. Minden tag statisztikáját lenullázzuk (ahol az ID nagyobb, mint 0)
+            await supabase.from('tagok').update({ akcio_szervezett: 0, akcio_resztvett: 0 }).gt('id', 0);
+            
+            return res.json({ success: true });
         }
 
         // --- KASSZA ---
@@ -110,7 +127,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // --- TAGOK ÉS EGYEBEK ---
+        // --- EGYÉB ALAPFUNKCIÓK ---
         if (path === '/api/tagok' && method === 'GET') {
             const { data: tagok } = await supabase.from('tagok').select('id, nev, ic_nev, rang, discord');
             const { data: rangok } = await supabase.from('jogosultsagok').select('rang, prioritas');
