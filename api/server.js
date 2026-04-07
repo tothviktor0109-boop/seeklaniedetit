@@ -20,11 +20,22 @@ export default async function handler(req, res) {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
             if (!tag || tag.jelszo !== jelszo) return res.status(401).json({ error: 'Hibás adatok!' });
+            
+            if (tag.elso_belepes) {
+                return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
+            }
+            
             const token = jwt.sign({ id: tag.id, nev: tag.nev, rang: tag.rang }, JWT_SECRET);
             return res.json({ success: true, token });
         }
 
-        // --- HÍREK (Javítva!) ---
+        if (path === '/api/jelszocsere' && method === 'POST') {
+            const { userId, ujJelszo } = req.body;
+            await supabase.from('tagok').update({ jelszo: ujJelszo, elso_belepes: false }).eq('id', userId);
+            return res.json({ success: true });
+        }
+
+        // --- HÍREK ---
         if (path === '/api/hirek') {
             if (method === 'GET') {
                 const { data } = await supabase.from('hirek').select('*').order('datum', { ascending: false });
@@ -32,13 +43,12 @@ export default async function handler(req, res) {
             }
             if (method === 'POST') {
                 const { cim, tartalom } = req.body;
-                if (!user) return res.status(403).json({ error: 'Bejelentkezés szükséges!' });
-                await supabase.from('hirek').insert([{ cim, tartalom, iro: user.nev }]);
+                await supabase.from('hirek').insert([{ cim, tartalom, iro: user?.nev || 'Ismeretlen' }]);
                 return res.json({ success: true });
             }
         }
 
-        // --- KASSZA (Naplózással együtt!) ---
+        // --- KASSZA ---
         if (path === '/api/kassza') {
             if (method === 'GET') {
                 const { data: logs } = await supabase.from('kassza_log').select('*').order('datum', { ascending: false }).limit(20);
@@ -47,13 +57,13 @@ export default async function handler(req, res) {
                 return res.json({ balance, logs: logs || [] });
             }
             if (method === 'POST') {
-                const { tipus, osszeg, operator } = req.body;
-                await supabase.from('kassza_log').insert([{ tipus, osszeg, operator }]);
+                const { tipus, osszeg, operator, bizonyitek } = req.body;
+                await supabase.from('kassza_log').insert([{ tipus, osszeg, operator, bizonyitek }]);
                 return res.json({ success: true });
             }
         }
 
-        // --- RANGOK ÉS TAGOK (Alap funkciók) ---
+        // --- RANGOK ÉS TAGOK ---
         if (path === '/api/jogosultsagok' && method === 'GET') {
             const { data } = await supabase.from('jogosultsagok').select('*').order('prioritas', { ascending: true });
             return res.json(data || []);
@@ -70,7 +80,7 @@ export default async function handler(req, res) {
             return res.json(data || {});
         }
 
-        res.status(404).json({ error: 'Endpoint not found: ' + path });
+        res.status(404).json({ error: 'Endpoint not found' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
