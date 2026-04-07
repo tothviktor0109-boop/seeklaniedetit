@@ -162,8 +162,8 @@
         style="height:100vh; display:flex; align-items:center; justify-content:center;">
         <div class="card" style="width: 350px; text-align: center; border: 2px solid var(--primary);">
             <h2 style="color: var(--primary);">Klani E Detit</h2> <input type="text" id="login-user"
-                placeholder="FELHASZNÁLÓ NÉV"> <input type="password" id="login-pass" placeholder="HITELTISÍTŐ KÓD">
-            <button class="btn" style="width: 100%;" onclick="bejelentkezes()">Terminal Belépés</button>
+                placeholder="FELHASZNÁLÓ NÉV"> <input type="password" id="login-pass" placeholder="Jelszó">
+            <button class="btn" style="width: 100%;" onclick="bejelentkezes()">Bejelentkezés</button>
             <p id="login-hiba" style="color: var(--danger); margin-top: 1rem;"></p>
         </div>
     </div>
@@ -178,10 +178,10 @@
                     LOGOUT ]</button> </div>
         </header>
         <nav> <button class="nav-btn active-nav" onclick="tab('hirek-section', this)">Közlemények</button> <button
-                class="nav-btn" onclick="tab('kassza-section', this)">Klán Kassza</button> <button class="nav-btn"
-                onclick="tab('tagok-section', this)">Legénység</button> <button class="nav-btn"
+                class="nav-btn" onclick="tab('kassza-section', this)">Frakció számla</button> <button class="nav-btn"
+                onclick="tab('tagok-section', this)">Tagok</button> <button class="nav-btn"
                 onclick="tab('profil-section', this)">Saját Profil</button> <button class="nav-btn" id="nav-jogok"
-                style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN 👑</button> </nav>
+                style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN panel</button> </nav>
         <div class="container">
             <div id="hirek-section" class="section active">
                 <div id="uj-hir-doboz" class="card" style="display:none;">
@@ -198,7 +198,7 @@
                             placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)"> <button class="btn"
                             onclick="inditTranzakcio('be')">Befizetés</button> <button class="btn btn-danger"
                             style="border-color:var(--danger); color:var(--danger);"
-                            onclick="inditTranzakcio('ki')">Kivétel</button> </div>
+                            onclick="inditTranzakcio('ki')">Kifizités</button> </div>
                 </div>
                 <div class="card">
                     <table>
@@ -208,7 +208,7 @@
                                 <th>Tag</th>
                                 <th>Típus</th>
                                 <th>Összeg</th>
-                                <th>Igazolás</th>
+                                <th>Bizonyíték</th>
                             </tr>
                         </thead>
                         <tbody id="kassza-log-lista"></tbody>
@@ -230,7 +230,7 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>IC Név / Felhasználó</th>
+                                <th>IC név/FELH név/DC</th>
                                 <th>Rang</th>
                                 <th>Művelet</th>
                             </tr>
