@@ -20,21 +20,55 @@ export default async function handler(req, res) {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
             if (!tag || tag.jelszo !== jelszo) return res.status(401).json({ error: 'Hibás adatok!' });
+            if (tag.elso_belepes) return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
             
-            if (tag.elso_belepes) {
-                return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
-            }
-            
-            const token = jwt.sign({ id: tag.id, nev: tag.nev, rang: tag.rang }, JWT_SECRET);
+            // Lekérjük a rang prioritását is a tokenbe
+            const { data: jog } = await supabase.from('jogosultsagok').select('prioritas, jog_kezel').eq('rang', tag.rang).single();
+            const token = jwt.sign({ id: tag.id, nev: tag.nev, rang: tag.rang, prio: jog.prioritas, jog_kezel: jog.jog_kezel }, JWT_SECRET);
             return res.json({ success: true, token });
         }
 
-        if (path === '/api/jelszocsere' && method === 'POST') {
-            const { userId, ujJelszo } = req.body;
-            await supabase.from('tagok').update({ jelszo: ujJelszo, elso_belepes: false }).eq('id', userId);
-            return res.json({ success: true });
+        // --- RANGOK KEZELÉSE (BŐVÍTVE) ---
+        if (path === '/api/jogosultsagok') {
+            if (method === 'GET') {
+                const { data } = await supabase.from('jogosultsagok').select('*').order('prioritas', { ascending: true });
+                return res.json(data || []);
+            }
+            if (method === 'POST') { // Új rang
+                if (!user?.jog_kezel) return res.status(403).json({ error: 'Nincs jogod!' });
+                const { rang, prioritas } = req.body;
+                await supabase.from('jogosultsagok').insert([{ rang, prioritas }]);
+                return res.json({ success: true });
+            }
         }
 
+        // Egyedi rang módosítása/törlése
+        if (path.startsWith('/api/jogosultsagok/') && method !== 'GET') {
+            const rangNev = decodeURIComponent(path.split('/').pop());
+            if (!user?.jog_kezel) return res.status(403).json({ error: 'Nincs jogod!' });
+
+            // Ellenőrizzük a célpont prioritását
+            const { data: celpont } = await supabase.from('jogosultsagok').select('prioritas').eq('rang', rangNev).single();
+            if (celpont && celpont.prioritas <= user.prio && user.rang !== 'DEV') {
+                return res.status(403).json({ error: 'Nincs jogod magasabb vagy egyenlő rangot módosítani!' });
+            }
+
+            if (method === 'PUT') {
+                const { mezo, ertek } = req.body;
+                const updateData = {}; updateData[mezo] = ertek;
+                await supabase.from('jogosultsagok').update(updateData).eq('rang', rangNev);
+                return res.json({ success: true });
+            }
+
+            if (method === 'DELETE') {
+                if (rangNev === 'DEV') return res.status(400).json({ error: 'A DEV rang nem törölhető!' });
+                await supabase.from('jogosultsagok').delete().eq('rang', rangNev);
+                return res.json({ success: true });
+            }
+        }
+
+        // --- HÍREK, KASSZA, TAGOK --- (A korábbi kódod részei változatlanul menjenek ide)
+        // ... (Kihagyva a rövidség kedvéért, de maradjon benne a server.js-ben!)
         // --- HÍREK ---
         if (path === '/api/hirek') {
             if (method === 'GET') {
