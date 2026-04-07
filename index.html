@@ -10,17 +10,18 @@
             --text: #e2e8f0; --text-muted: #64748b; --danger: #ff0055;
             --success: #00ff88; --accent: #bc00ff; --panel-border: 1px solid var(--primary-border);
         }
-        body { font-family: 'Oxanium', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        body { font-family: 'Oxanium', sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow-x: hidden; }
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
         .card { background: var(--card-bg); border: var(--panel-border); padding: 2rem; margin-bottom: 2rem; position: relative; }
         .section { display: none; } .active { display: block; }
-        header { background: rgba(11, 21, 38, 0.9); padding: 1rem 2rem; border-bottom: var(--panel-border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        header { background: rgba(11, 21, 38, 0.9); backdrop-filter: blur(15px); padding: 1rem 2rem; border-bottom: var(--panel-border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         nav { display: flex; justify-content: center; background: rgba(4, 9, 17, 0.8); padding: 0.5rem; gap: 5px; border-bottom: var(--panel-border); }
         .nav-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 0.5rem 1.2rem; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; }
         .nav-btn:hover { color: var(--primary); background: var(--primary-dim); }
         .nav-btn.active-nav { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
-        .btn { border: 1px solid var(--primary); padding: 0.8rem 1.8rem; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--primary); font-weight: 800; }
+        .btn { border: 1px solid var(--primary); padding: 0.8rem 1.8rem; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--primary); font-weight: 800; transition: 0.2s; }
         .btn:hover { background: var(--primary); color: var(--bg); box-shadow: 0 0 15px var(--primary); }
+        .btn-danger { border-color: var(--danger); color: var(--danger); }
         input, textarea, select { padding: 0.8rem 1rem; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--primary-border); width: 100%; margin-bottom: 1rem; outline: none; font-family: 'Oxanium'; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal-content { width: 90%; max-width: 500px; background: var(--card-bg); border: 2px solid var(--primary); padding: 2rem; }
@@ -35,6 +36,7 @@
 
     <div id="login-screen" class="auth-screen active">
         <div class="card" style="width: 350px; text-align: center; border: 2px solid var(--primary);">
+            <div style="font-size: 3rem;">🌊</div>
             <h2 style="color: var(--primary);">Klani E Detit</h2>
             <input type="text" id="login-user" placeholder="KARAKTER NEVE">
             <input type="password" id="login-pass" placeholder="HITELTISÍTŐ KÓD">
@@ -47,24 +49,24 @@
         <header>
             <h1 style="color: var(--primary); font-size: 1.2rem;">KLANI E DETIT | HQ</h1>
             <div>
-                <span id="logged-in-user" style="color:var(--primary); font-weight:bold;"></span>
-                <button onclick="kijelentkezes()" style="margin-left:10px; color:var(--danger); background:none; border:none; cursor:pointer;">[ LOGOUT ]</button>
+                <span id="logged-in-user" style="color: var(--primary); font-weight: bold;"></span>
+                <button onclick="kijelentkezes()" style="margin-left: 10px; color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold;">[ LOG OUT ]</button>
             </div>
         </header>
 
         <nav>
             <button class="nav-btn active-nav" onclick="tab('hirek-section', this)">Közlemények</button>
-            <button class="nav-btn" onclick="tab('kassza-section', this)">Kassza</button>
+            <button class="nav-btn" onclick="tab('kassza-section', this)">Klán Kassza</button>
             <button class="nav-btn" onclick="tab('tagok-section', this)">Legénység</button>
-            <button class="nav-btn" onclick="tab('profil-section', this)">Profil</button>
-            <button class="nav-btn" id="nav-jogok" style="display:none; color:var(--accent);" onclick="tab('jogok-section', this)">Mátrix Jogok 👑</button>
+            <button class="nav-btn" onclick="tab('profil-section', this)">Saját Profil</button>
+            <button class="nav-btn" id="nav-jogok" style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN 👑</button>
         </nav>
 
         <div class="container">
-            <div id="password-screen" class="section card" style="max-width:400px; margin:auto; text-align:center;">
+            <div id="password-screen" class="section card" style="max-width: 400px; margin: auto; text-align: center;">
                 <h2>Első Belépés</h2>
                 <input type="password" id="new-pass" placeholder="Új biztonsági kód">
-                <button class="btn" style="width:100%" onclick="jelszocsere()">Mentés</button>
+                <button class="btn" style="width: 100%;" onclick="jelszocsere()">Kód Mentése</button>
             </div>
 
             <div id="hirek-section" class="section active">
@@ -79,11 +81,11 @@
 
             <div id="kassza-section" class="section">
                 <div class="card" style="text-align: center;">
-                    <h1 id="balanceDisplay" style="font-size: 3rem; color: var(--success);">0 $</h1>
+                    <h1 id="balanceDisplay" style="font-size: 3.5rem; color: var(--success);">0 $</h1>
                     <div id="kassza-controls" style="display:none;">
                         <input type="text" id="osszeg" placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)">
                         <button class="btn" onclick="inditTranzakcio('be')">Befizetés</button>
-                        <button class="btn" style="color:var(--danger); border-color:var(--danger);" onclick="inditTranzakcio('ki')">Kivétel</button>
+                        <button class="btn btn-danger" style="border-color: var(--danger); color: var(--danger);" onclick="inditTranzakcio('ki')">Kivétel</button>
                     </div>
                 </div>
                 <div class="card">
@@ -92,9 +94,9 @@
             </div>
 
             <div id="tagok-section" class="section">
-                <div id="tag-felvetel-box" class="card" style="display:none; border-color:var(--success);">
+                <div id="tag-felvetel-box" class="card" style="display:none; border-color: var(--success);">
                     <h3>Új tag felvétele</h3>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display: flex; gap: 10px;">
                         <input type="text" id="uj-tag-nev" placeholder="Név">
                         <input type="text" id="uj-tag-discord" placeholder="Discord">
                         <select id="uj-tag-rang-select"></select>
@@ -107,22 +109,16 @@
             </div>
 
             <div id="profil-section" class="section">
-                <div class="card">
-                    <h2 id="display-nev" style="color:var(--primary); margin:0;"></h2>
-                    <p id="display-rang" style="color:var(--text-muted); text-transform:uppercase; margin-bottom:20px;"></p>
-                    <textarea id="input-bemutatkozas" rows="6" placeholder="Bemutatkozásod..."></textarea>
-                    <button class="btn" style="width:100%" onclick="mentesProfil()">Mentés</button>
                 </div>
-            </div>
 
             <div id="jogok-section" class="section">
                 <div class="card">
-                    <h2 style="color:var(--accent)">Rangok Kezelése</h2>
-                    <input type="text" id="uj-rang-nev" placeholder="Név" style="width:200px;">
-                    <input type="number" id="uj-rang-prio" placeholder="Prio" style="width:100px;">
+                    <h2 style="color: var(--danger);">ADMINisztráció - Rangok</h2>
+                    <input type="text" id="uj-rang-nev" placeholder="Új rang neve" style="width: 200px;">
+                    <input type="number" id="uj-rang-prio" placeholder="Prio (1-10)" style="width: 100px;">
                     <button class="btn" onclick="letrehozRang()">Létrehozás</button>
-                    <table style="margin-top:20px">
-                        <thead><tr><th>Rang (P)</th><th>Hír+</th><th>Kassza</th><th>Tag+</th><th>Jog+</th><th>Műv</th></tr></thead>
+                    <table style="margin-top: 20px;">
+                        <thead><tr><th>Rang (Prio)</th><th>Hír+</th><th>Kassza</th><th>Tag+</th><th>Jog+</th><th>Műv.</th></tr></thead>
                         <tbody id="jogok-lista"></tbody>
                     </table>
                 </div>
@@ -132,28 +128,32 @@
 
     <div id="kassza-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="modal-osszeg-display"></h2>
+            <h2 id="modal-osszeg-display" style="color: var(--primary);"></h2>
             <select id="igazolas-tipus" onchange="valtsIgazolasTipus(this.value)">
-                <option value="link">Link (Imgur/Discord)</option>
-                <option value="szoveg">Megjegyzés</option>
+                <option value="link">Kép Link (Imgur/Discord)</option>
+                <option value="szoveg">Szöveges megjegyzés</option>
             </select>
             <div id="igazolas-input-container">
                 <input type="text" id="kassza-bizonyitek" placeholder="https://...">
             </div>
-            <div style="display:flex; gap:10px; margin-top:20px">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn" onclick="veglegesitTranzakcio()">Megerősítés</button>
-                <button class="btn" style="border:none" onclick="zárKasszaModal()">Mégse</button>
+                <button class="btn" style="border: none; color: var(--text-muted);" onclick="zárKasszaModal()">Mégse</button>
             </div>
         </div>
     </div>
 
     <div id="profil-modal" class="modal-overlay" onclick="this.style.display='none'">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 id="modal-nev" style="color:var(--primary); margin:0"></h2>
-            <p id="modal-rang" style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase"></p>
-            <p><strong>Discord:</strong> <span id="modal-discord"></span></p>
-            <div id="modal-leiras" style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px; margin-top:10px"></div>
-            <button class="btn" style="width:100%; margin-top:20px" onclick="document.getElementById('profil-modal').style.display='none'">Bezárás</button>
+            <h2 style="color: var(--primary); border-bottom: 1px solid var(--primary-border); padding-bottom: 10px; margin-bottom: 15px;">Adatlap</h2>
+            <p><strong>Név:</strong> <span id="modal-nev"></span></p>
+            <p><strong>Rang:</strong> <span id="modal-rang"></span></p>
+            <p><strong>Discord elérhetőség:</strong> <span id="modal-discord"></span></p>
+            <div style="margin-top: 15px;">
+                <p><strong>Leírás:</strong></p>
+                <div id="modal-leiras" style="background: rgba(0,0,0,0.4); padding: 1rem; border: 1px solid var(--primary-border); min-height: 100px;"></div>
+            </div>
+            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="document.getElementById('profil-modal').style.display='none'">Bezárás</button>
         </div>
     </div>
 
@@ -173,31 +173,34 @@
         async function bejelentkezes() {
             const nev = document.getElementById('login-user').value;
             const jelszo = document.getElementById('login-pass').value;
-            const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nev, jelszo}) });
-            const data = await res.json();
-            if (data.success) {
-                if (data.elso_belepes) {
-                    window.tempId = data.user.id;
-                    document.getElementById('login-screen').style.display='none';
-                    document.getElementById('main-app').style.display='block';
-                    tab('password-screen', null);
-                } else {
-                    localStorage.setItem('klani_token', data.token);
-                    location.reload();
-                }
-            } else document.getElementById('login-hiba').innerText = data.error;
+            try {
+                const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nev, jelszo}) });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.elso_belepes) {
+                        window.tempId = data.user.id;
+                        document.getElementById('login-screen').style.display='none';
+                        document.getElementById('main-app').style.display='block';
+                        tab('password-screen', null);
+                    } else {
+                        localStorage.setItem('klani_token', data.token);
+                        location.reload();
+                    }
+                } else document.getElementById('login-hiba').innerText = data.error;
+            } catch(e) { document.getElementById('login-hiba').innerText = "Hálózati hiba!"; }
         }
 
         async function jelszocsere() {
             const ujJelszo = document.getElementById('new-pass').value;
             await apiFetch('/api/jelszocsere', { method:'POST', body:JSON.stringify({userId:window.tempId, ujJelszo}) });
-            alert("Kész! Jelentkezz be újra."); location.reload();
+            alert("Kód frissítve!"); location.reload();
         }
 
         function tab(id, btn) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             if(btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav')); btn.classList.add('active-nav'); }
+            if(id === 'profil-section') fetchProfil();
         }
 
         window.onload = async () => {
@@ -249,8 +252,8 @@
             const s = document.getElementById('uj-tag-rang-select'); if(s) { s.innerHTML = ''; jogok.forEach(j => s.innerHTML += `<option value="${j.rang}">${j.rang}</option>`); }
             const tbody = document.getElementById('tagok-lista'); tbody.innerHTML = '';
             tagok.forEach(t => {
-                let btn = `<button class="btn" style="padding:2px 10px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">ADATLAP</button>`;
-                if(myPermissions.tag_kezel) btn += ` <button class="btn" style="padding:2px 10px; font-size:0.6rem; color:var(--danger)" onclick="tagTorles(${t.id})">🗑️</button>`;
+                let btn = `<button class="btn" style="padding:2px 10px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">PROFIL</button>`;
+                if(myPermissions.tag_kezel) btn += ` <button class="btn" style="padding:2px 10px; font-size:0.6rem; color:var(--danger); border-color:var(--danger);" onclick="tagTorles(${t.id})">🗑️</button>`;
                 tbody.innerHTML += `<tr><td>${t.nev}<br><small>${t.discord||'-'}</small></td><td>${t.rang}</td><td>${btn}</td></tr>`;
             });
         }
@@ -259,23 +262,42 @@
             await apiFetch('/api/tagok', { method:'POST', body:JSON.stringify({nev, discord, rang}) });
             alert("Kész! Kód: 123456"); fetchTagok();
         }
-        async function tagTorles(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, {method:'DELETE'}); fetchTagok(); } }
+        async function tagTorles(id) { if(confirm("Törlöd ezt a tagot?")) { await apiFetch(`/api/tagok/${id}`, {method:'DELETE'}); fetchTagok(); } }
+        
         async function megtekintProfil(id) {
             const res = await apiFetch(`/api/profil/${id}`); const p = await res.json();
-            document.getElementById('modal-nev').innerText = p.nev; document.getElementById('modal-rang').innerText = p.rang; document.getElementById('modal-discord').innerText = p.discord || '-'; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-';
+            document.getElementById('modal-nev').innerText = p.nev; 
+            document.getElementById('modal-rang').innerText = p.rang; 
+            document.getElementById('modal-discord').innerText = p.discord || 'Nincs megadva'; 
+            document.getElementById('modal-leiras').innerText = p.bemutatkozas || 'Nincs leírás.';
             document.getElementById('profil-modal').style.display = 'flex';
         }
+
         async function fetchProfil() {
             const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json();
-            document.getElementById('display-nev').innerText = p.nev; document.getElementById('display-rang').innerText = p.rang; document.getElementById('input-bemutatkozas').value = p.bemutatkozas || '';
-        }
-        async function mentesProfil() {
-            const b = document.getElementById('input-bemutatkozas').value;
-            const res = await apiFetch(`/api/profil/${myUserId}`, { method:'PUT', body:JSON.stringify({bemutatkozas:b}) });
-            if(res) alert("Mentve!");
+            const container = document.getElementById('profil-section');
+            container.innerHTML = `
+                <div class="card">
+                    <h2 style="color:var(--primary); margin:0;">Saját Profil</h2>
+                    <div style="margin: 20px 0; line-height: 1.8;">
+                        <p><strong>Név:</strong> ${p.nev}</p>
+                        <p><strong>Rang:</strong> ${p.rang}</p>
+                        <p><strong>Discord elérhetőség:</strong> ${p.discord || 'Nincs megadva'}</p>
+                    </div>
+                    <p><strong>Saját leírásod szerkesztése:</strong></p>
+                    <textarea id="input-bemutatkozas" rows="6" placeholder="Írj magadról...">${p.bemutatkozas || ''}</textarea>
+                    <button class="btn" style="width: 100%" onclick="mentesProfil()">Leírás Mentése</button>
+                </div>
+            `;
         }
 
-        // EGYÉB
+        async function mentesProfil() {
+            const b = document.getElementById('input-bemutatkozas').value;
+            const res = await apiFetch(`/api/profil/${myUserId}`, { method: 'PUT', body: JSON.stringify({ bemutatkozas: b }) });
+            if(res) alert("Profilod frissítve!");
+        }
+
+        // HÍREK ÉS KASSZA
         async function fetchHirek() { 
             const res = await apiFetch('/api/hirek'); const h = await res.json();
             const l = document.getElementById('hirek-lista'); l.innerHTML = '';
@@ -295,6 +317,8 @@
                 tbody.innerHTML += `<tr><td>${new Date(log.datum).toLocaleDateString()}</td><td>${log.operator}</td><td style="color:${log.tipus==='be'?'var(--success)':'var(--danger)'}">${log.tipus.toUpperCase()}</td><td>${log.osszeg.toLocaleString()} $</td><td>${ig}</td></tr>`;
             });
         }
+
+        // ADMIN RANGOK
         async function fetchJogok() {
             const res = await apiFetch('/api/jogosultsagok'); const jogok = await res.json();
             const tbody = document.getElementById('jogok-lista'); tbody.innerHTML = '';
@@ -311,7 +335,7 @@
         }
         async function letrehozRang() { await apiFetch('/api/jogosultsagok', { method:'POST', body:JSON.stringify({rang:document.getElementById('uj-rang-nev').value, prioritas:parseInt(document.getElementById('uj-rang-prio').value)}) }); fetchJogok(); }
         async function updateRang(rang, mezo, ertek) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(rang)}`, { method:'PUT', body:JSON.stringify({mezo, ertek}) }); }
-        async function torolRang(rang) { if(confirm("Törlöd?")) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(rang)}`, {method:'DELETE'}); fetchJogok(); } }
+        async function torolRang(rang) { if(confirm(`Törlöd a(z) ${rang} rangot?`)) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(rang)}`, {method:'DELETE'}); fetchJogok(); } }
     </script>
 </body>
 </html>

@@ -10,30 +10,75 @@ export default async function handler(req, res) {
     const authHeader = req.headers.authorization;
     let user = null;
 
+    // JWT Ellenőrzés és felhasználói adatok kinyerése
     if (authHeader) {
-        try { user = jwt.verify(authHeader.split(' ')[1], JWT_SECRET); } catch (e) {}
+        try { 
+            user = jwt.verify(authHeader.split(' ')[1], JWT_SECRET); 
+        } catch (e) {
+            console.error("JWT hiba:", e.message);
+        }
     }
 
     try {
-        // --- AUTH & LOGIN ---
+        // --- BEJELENTKEZÉS ---
         if (path === '/api/login' && method === 'POST') {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
-            if (!tag || tag.jelszo !== jelszo) return res.status(401).json({ error: 'Hibás adatok!' });
-            if (tag.elso_belepes) return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
             
+            if (!tag || tag.jelszo !== jelszo) {
+                return res.status(401).json({ error: 'Hibás név vagy jelszó!' });
+            }
+            
+            if (tag.elso_belepes) {
+                return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
+            }
+            
+            // Prioritás lekérése a tokenbe a biztonsági ellenőrzésekhez
             const { data: jog } = await supabase.from('jogosultsagok').select('prioritas, jog_kezel').eq('rang', tag.rang).single();
-            const token = jwt.sign({ id: tag.id, nev: tag.nev, rang: tag.rang, prio: jog?.prioritas || 99, jog_kezel: jog?.jog_kezel || false }, JWT_SECRET);
+            
+            const token = jwt.sign({ 
+                id: tag.id, 
+                nev: tag.nev, 
+                rang: tag.rang, 
+                prio: jog?.prioritas || 99, 
+                jog_kezel: jog?.jog_kezel || false 
+            }, JWT_SECRET);
+            
             return res.json({ success: true, token });
         }
 
+        // --- JELSZÓCSERE (Első belépésnél) ---
         if (path === '/api/jelszocsere' && method === 'POST') {
             const { userId, ujJelszo } = req.body;
             await supabase.from('tagok').update({ jelszo: ujJelszo, elso_belepes: false }).eq('id', userId);
             return res.json({ success: true });
         }
 
-        // --- TAGOK KEZELÉSE ---
+        // --- TAGOK ÉS RANGOK MÓDOSÍTÁSA/TÖRLÉSE (Prioritás védelem) ---
+        if ((path.startsWith('/api/tagok/') || path.startsWith('/api/jogosultsagok/')) && (method === 'DELETE' || method === 'PUT')) {
+            if (!user?.jog_kezel) return res.status(403).json({ error: 'Nincs jogod ehhez a művelethez!' });
+
+            const targetIdOrName = decodeURIComponent(path.split('/').pop());
+            let targetPrio = 999;
+
+            if (path.startsWith('/api/tagok/')) {
+                const { data: targetUser } = await supabase.from('tagok').select('rang').eq('id', targetIdOrName).single();
+                if (targetUser) {
+                    const { data: targetJog } = await supabase.from('jogosultsagok').select('prioritas').eq('rang', targetUser.rang).single();
+                    targetPrio = targetJog?.prioritas || 999;
+                }
+            } else {
+                const { data: targetJog } = await supabase.from('jogosultsagok').select('prioritas').eq('rang', targetIdOrName).single();
+                targetPrio = targetJog?.prioritas || 999;
+            }
+
+            // SZIGORÚ SZABÁLY: Csak akkor engedjük, ha a módosító prioritása KISEBB (erősebb), mint a célponté
+            if (user.prio >= targetPrio && user.rang !== 'DEV') {
+                return res.status(403).json({ error: 'Kisebb vagy egyenrangú tagot/rangot nem módosíthatsz!' });
+            }
+        }
+
+        // --- TAGOK LISTÁJA ÉS FELVÉTELE ---
         if (path === '/api/tagok') {
             if (method === 'GET') {
                 const { data } = await supabase.from('tagok').select('id, nev, discord, rang').order('nev', { ascending: true });
@@ -42,7 +87,7 @@ export default async function handler(req, res) {
             if (method === 'POST') {
                 const { nev, discord, rang } = req.body;
                 const { error } = await supabase.from('tagok').insert([{ nev, discord, rang, jelszo: '123456', elso_belepes: true }]);
-                if (error) return res.status(400).json({ error: 'Hiba a felvétel során (lehet már létezik a név)!' });
+                if (error) return res.status(400).json({ error: 'Hiba! Lehet, hogy ez a név már foglalt.' });
                 return res.json({ success: true });
             }
         }
@@ -53,7 +98,7 @@ export default async function handler(req, res) {
             return res.json({ success: true });
         }
 
-        // --- PROFIL ---
+        // --- PROFIL KEZELÉS ---
         if (path.startsWith('/api/profil/')) {
             const id = path.split('/').pop();
             if (method === 'GET') {
@@ -62,8 +107,7 @@ export default async function handler(req, res) {
             }
             if (method === 'PUT') {
                 const { bemutatkozas } = req.body;
-                const { error } = await supabase.from('tagok').update({ bemutatkozas }).eq('id', id);
-                if (error) return res.status(500).json({ error: error.message });
+                await supabase.from('tagok').update({ bemutatkozas }).eq('id', id);
                 return res.json({ success: true });
             }
         }
@@ -96,7 +140,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // --- RANGOK (JOGOK) ---
+        // --- RANGOK (JOGOSULTSÁGOK) ---
         if (path === '/api/jogosultsagok') {
             if (method === 'GET') {
                 const { data } = await supabase.from('jogosultsagok').select('*').order('prioritas', { ascending: true });
@@ -109,22 +153,24 @@ export default async function handler(req, res) {
             }
         }
 
-        if (path.startsWith('/api/jogosultsagok/') && method !== 'GET') {
+        if (path.startsWith('/api/jogosultsagok/') && method === 'PUT') {
             const rangNev = decodeURIComponent(path.split('/').pop());
-            if (method === 'PUT') {
-                const { mezo, ertek } = req.body;
-                const updateData = {}; updateData[mezo] = ertek;
-                await supabase.from('jogosultsagok').update(updateData).eq('rang', rangNev);
-                return res.json({ success: true });
-            }
-            if (method === 'DELETE') {
-                await supabase.from('jogosultsagok').delete().eq('rang', rangNev);
-                return res.json({ success: true });
-            }
+            const { mezo, ertek } = req.body;
+            const updateData = {}; updateData[mezo] = ertek;
+            await supabase.from('jogosultsagok').update(updateData).eq('rang', rangNev);
+            return res.json({ success: true });
         }
 
-        res.status(404).json({ error: 'Endpoint not found' });
+        if (path.startsWith('/api/jogosultsagok/') && method === 'DELETE') {
+            const rangNev = decodeURIComponent(path.split('/').pop());
+            if (rangNev === 'DEV') return res.status(400).json({ error: 'A DEV rang sérthetetlen!' });
+            await supabase.from('jogosultsagok').delete().eq('rang', rangNev);
+            return res.json({ success: true });
+        }
+
+        res.status(404).json({ error: 'Endpoint nem található!' });
     } catch (err) {
+        console.error("Szerver hiba:", err);
         res.status(500).json({ error: err.message });
     }
 }
