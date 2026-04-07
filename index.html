@@ -1,289 +1,297 @@
 <!DOCTYPE html>
 <html lang="hu">
+
 <head>
     <meta charset="UTF-8">
     <title>Klani E Detit | HQ</title>
     <style>
         :root {
-            --bg: #040911; --card-bg: #0b1526; --primary: #00f2fe;
-            --primary-dim: rgba(0, 242, 254, 0.1); --primary-border: rgba(0, 242, 254, 0.3);
-            --text: #e2e8f0; --text-muted: #64748b; --danger: #ff0055;
-            --success: #00ff88; --accent: #bc00ff; --panel-border: 1px solid var(--primary-border);
+            --bg: #040911;
+            --card-bg: #0b1526;
+            --primary: #00f2fe;
+            --primary-dim: rgba(0, 242, 254, 0.1);
+            --primary-border: rgba(0, 242, 254, 0.3);
+            --text: #e2e8f0;
+            --text-muted: #64748b;
+            --danger: #ff0055;
+            --success: #00ff88;
+            --accent: #bc00ff;
+            --panel-border: 1px solid var(--primary-border);
         }
-        body { font-family: 'Oxanium', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        .card { background: var(--card-bg); border: var(--panel-border); padding: 2rem; margin-bottom: 2rem; }
-        .section { display: none; } .active { display: block; }
-        header { background: rgba(11, 21, 38, 0.9); padding: 1rem 2rem; border-bottom: var(--panel-border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-        nav { display: flex; justify-content: center; background: rgba(4, 9, 17, 0.8); padding: 0.5rem; border-bottom: var(--panel-border); }
-        .nav-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 0.5rem 1.2rem; cursor: pointer; text-transform: uppercase; font-weight: 700; transition: 0.2s; }
-        .nav-btn.active-nav { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
-        .btn { border: 1px solid var(--primary); padding: 0.8rem 1.8rem; text-transform: uppercase; cursor: pointer; background: transparent; color: var(--primary); font-weight: 800; }
-        .btn:hover { background: var(--primary); color: var(--bg); box-shadow: 0 0 15px var(--primary); }
-        input, textarea, select { padding: 0.8rem 1rem; background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--primary-border); width: 100%; margin-bottom: 1rem; outline: none; font-family: 'Oxanium'; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
-        .modal-content { width: 90%; max-width: 500px; background: var(--card-bg); border: 2px solid var(--primary); padding: 2rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th { text-align: left; padding: 0.8rem; color: var(--primary); border-bottom: 2px solid var(--primary-border); font-size: 0.7rem; text-transform: uppercase; }
-        td { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        body {
+            font-family: 'Oxanium', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: var(--panel-border);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .active {
+            display: block;
+        }
+
+        header {
+            background: rgba(11, 21, 38, 0.9);
+            padding: 1rem 2rem;
+            border-bottom: var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            background: rgba(4, 9, 17, 0.8);
+            padding: 0.5rem;
+            border-bottom: var(--panel-border);
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            padding: 0.5rem 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 700;
+            transition: 0.2s;
+        }
+
+        .nav-btn.active-nav {
+            border-color: --primary;
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .btn {
+            border: 1px solid var(--primary);
+            padding: 0.8rem 1.8rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            background: transparent;
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .btn:hover {
+            background: var(--primary);
+            color: var(--bg);
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        input,
+        textarea,
+        select {
+            padding: 0.8rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: 1px solid var(--primary-border);
+            width: 100%;
+            margin-bottom: 1rem;
+            outline: none;
+            font-family: 'Oxanium';
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            padding: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.8rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary-border);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@400;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
 
-    <div id="login-screen" class="auth-screen active" style="height:100vh; display:flex; align-items:center; justify-content:center;">
+<body>
+    <div id="login-screen" class="auth-screen active"
+        style="height:100vh; display:flex; align-items:center; justify-content:center;">
         <div class="card" style="width: 350px; text-align: center; border: 2px solid var(--primary);">
-            <h2 style="color: var(--primary);">Klani E Detit</h2>
-            <input type="text" id="login-user" placeholder="KARAKTER NEVE">
-            <input type="password" id="login-pass" placeholder="HITELTISÍTŐ KÓD">
+            <h2 style="color: var(--primary);">Klani E Detit</h2> <input type="text" id="login-user"
+                placeholder="FELHASZNÁLÓ NÉV"> <input type="password" id="login-pass" placeholder="HITELTISÍTŐ KÓD">
             <button class="btn" style="width: 100%;" onclick="bejelentkezes()">Terminal Belépés</button>
             <p id="login-hiba" style="color: var(--danger); margin-top: 1rem;"></p>
         </div>
     </div>
-
     <div id="main-app" style="display: none;">
         <header>
             <h1 style="color: var(--primary); font-size: 1.2rem; margin:0; flex: 1;">KLANI E DETIT | HQ</h1>
-            <div id="header-rang" style="color: var(--primary); font-weight: 800; text-align: center; flex: 1;">RANG: -</div>
-            <div style="flex: 1; text-align: right;">
-                <span id="logged-in-user" style="color:var(--primary); font-weight:bold;"></span>
-                <button onclick="kijelentkezes()" style="margin-left:10px; color:var(--danger); background:none; border:none; cursor:pointer;">[ LOGOUT ]</button>
+            <div id="header-rang" style="color: var(--primary); font-weight: 800; text-align: center; flex: 1;">RANG: -
             </div>
+            <div style="flex: 1; text-align: right;"> <span id="logged-in-user"
+                    style="color:var(--primary); font-weight:bold;"></span> <button onclick="kijelentkezes()"
+                    style="margin-left:10px; color:var(--danger); background:none; border:none; cursor:pointer;">[
+                    LOGOUT ]</button> </div>
         </header>
-
-        <nav>
-            <button class="nav-btn active-nav" onclick="tab('hirek-section', this)">Közlemények</button>
-            <button class="nav-btn" onclick="tab('kassza-section', this)">Klán Kassza</button>
-            <button class="nav-btn" onclick="tab('tagok-section', this)">Legénység</button>
-            <button class="nav-btn" onclick="tab('profil-section', this)">Saját Profil</button>
-            <button class="nav-btn" id="nav-jogok" style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN 👑</button>
-        </nav>
-
+        <nav> <button class="nav-btn active-nav" onclick="tab('hirek-section', this)">Közlemények</button> <button
+                class="nav-btn" onclick="tab('kassza-section', this)">Klán Kassza</button> <button class="nav-btn"
+                onclick="tab('tagok-section', this)">Legénység</button> <button class="nav-btn"
+                onclick="tab('profil-section', this)">Saját Profil</button> <button class="nav-btn" id="nav-jogok"
+                style="display:none; color:var(--danger);" onclick="tab('jogok-section', this)">ADMIN 👑</button> </nav>
         <div class="container">
             <div id="hirek-section" class="section active">
                 <div id="uj-hir-doboz" class="card" style="display:none;">
-                    <h3>Új bejegyzés</h3>
-                    <input type="text" id="hir-cim" placeholder="Cím">
-                    <textarea id="hir-tartalom" rows="3" placeholder="Tartalom..."></textarea>
-                    <button class="btn" onclick="posztolHir()">Küldés</button>
+                    <h3>Új bejegyzés</h3> <input type="text" id="hir-cim" placeholder="Cím"> <textarea id="hir-tartalom"
+                        rows="3" placeholder="Tartalom..."></textarea> <button class="btn"
+                        onclick="posztolHir()">Küldés</button>
                 </div>
                 <div id="hirek-lista"></div>
             </div>
-
             <div id="kassza-section" class="section">
                 <div class="card" style="text-align: center;">
                     <h1 id="balanceDisplay" style="font-size: 3rem; color: var(--success);">0 $</h1>
-                    <div id="kassza-controls" style="display:block;">
-                        <input type="text" id="osszeg" placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)">
-                        <button class="btn" onclick="inditTranzakcio('be')">Befizetés</button>
-                        <button class="btn btn-danger" style="border-color:var(--danger); color:var(--danger);" onclick="inditTranzakcio('ki')">Kivétel</button>
-                    </div>
+                    <div id="kassza-controls" style="display:block;"> <input type="text" id="osszeg"
+                            placeholder="Összeg" style="width: 200px;" oninput="formatNumber(this)"> <button class="btn"
+                            onclick="inditTranzakcio('be')">Befizetés</button> <button class="btn btn-danger"
+                            style="border-color:var(--danger); color:var(--danger);"
+                            onclick="inditTranzakcio('ki')">Kivétel</button> </div>
                 </div>
                 <div class="card">
-                    <table><thead><tr><th>Dátum</th><th>Tag</th><th>Típus</th><th>Összeg</th><th>Igazolás</th></tr></thead><tbody id="kassza-log-lista"></tbody></table>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Dátum</th>
+                                <th>Tag</th>
+                                <th>Típus</th>
+                                <th>Összeg</th>
+                                <th>Igazolás</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kassza-log-lista"></tbody>
+                    </table>
                 </div>
             </div>
-
             <div id="tagok-section" class="section">
                 <div id="tag-felvetel-box" class="card" style="display:none; border-color:var(--success);">
                     <h3>Új tag felvétele</h3>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="uj-tag-nev" placeholder="Név">
-                        <input type="text" id="uj-tag-discord" placeholder="Discord">
-                        <select id="uj-tag-rang-select"></select>
-                        <button class="btn" onclick="ujTagMentese()">FELVÉTEL</button>
-                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap: wrap;"> <input type="text" id="uj-tag-user"
+                            placeholder="Felhasználó név" style="width: 23%;"> <input type="text" id="uj-tag-ic"
+                            placeholder="IC Név" style="width: 23%;"> <input type="text" id="uj-tag-discord"
+                            placeholder="Discord" style="width: 23%;"> <select id="uj-tag-rang-select"
+                            style="width: 23%;"></select> <button class="btn" onclick="ujTagMentese()"
+                            style="width: 100%;">FELVÉTEL</button> </div>
                 </div>
-                <div class="card">
-                    <table><thead><tr><th>Név / Discord</th><th>Rang</th><th>Művelet</th></tr></thead><tbody id="tagok-lista"></tbody></table>
+                <div class="card"> <input type="text" id="tag-kereso"
+                        placeholder="Keresés (IC név, Felhasználó, Discord...)" oninput="szuresTagok(this.value)">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>IC Név / Felhasználó</th>
+                                <th>Rang</th>
+                                <th>Művelet</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tagok-lista"></tbody>
+                    </table>
                 </div>
             </div>
-
             <div id="profil-section" class="section"></div>
-
             <div id="jogok-section" class="section">
                 <div class="card">
                     <h2 style="color:var(--danger)">ADMIN - Rangok</h2>
-                    <div style="display:flex; gap:10px; margin-bottom: 20px;">
-                        <input type="text" id="uj-rang-nev" placeholder="Név" style="width:200px;">
-                        <input type="number" id="uj-rang-prio" placeholder="Prio" style="width:100px;">
-                        <button class="btn" onclick="letrehozRang()">Létrehozás</button>
+                    <div style="display:flex; gap:10px;"> <input type="text" id="uj-rang-nev" placeholder="Név"
+                            style="width:200px;"> <input type="number" id="uj-rang-prio" placeholder="Prio"
+                            style="width:100px;"> <button class="btn" onclick="letrehozRang()">Létrehozás</button>
                     </div>
                     <table style="margin-top:20px">
-                        <thead><tr><th>Rang (Név + Prio)</th><th>Hír+</th><th>Hír-K</th><th>Kassza</th><th>Tag+</th><th>Jog+</th><th>Név</th><th>Műv</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Rang (P)</th>
+                                <th>Hír+</th>
+                                <th>Hír-K</th>
+                                <th>Kassza</th>
+                                <th>Tag+</th>
+                                <th>Jog+</th>
+                                <th>Név</th>
+                                <th>Műv</th>
+                            </tr>
+                        </thead>
                         <tbody id="jogok-lista"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
-
     <div id="edit-tag-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="color:var(--primary)">Tag Szerkesztése</h2>
-            <input type="text" id="edit-tag-nev" placeholder="Név">
-            <input type="text" id="edit-tag-discord" placeholder="Discord">
-            <select id="edit-tag-rang"></select>
-            <div style="display:flex; gap:10px; margin-top:20px">
-                <button class="btn" onclick="veglegesitTagSzerkesztes()">Mentés</button>
-                <button class="btn" style="border:none; color:var(--text-muted)" onclick="document.getElementById('edit-tag-modal').style.display='none'">Mégse</button>
-            </div>
+            <p>Felhasználó név:</p> <input type="text" id="edit-tag-user">
+            <p>IC Név:</p> <input type="text" id="edit-tag-ic">
+            <p>Discord:</p> <input type="text" id="edit-tag-discord">
+            <p>Rang:</p> <select id="edit-tag-rang"></select>
+            <div style="display:flex; gap:10px; margin-top:20px"> <button class="btn"
+                    onclick="veglegesitTagSzerkesztes()">Mentés</button> <button class="btn"
+                    style="border:none; color:var(--text-muted)"
+                    onclick="document.getElementById('edit-tag-modal').style.display='none'">Mégse</button> </div>
         </div>
     </div>
-
-    <div id="kassza-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2 id="modal-osszeg-display"></h2>
-            <select id="igazolas-tipus" onchange="valtsIgazolasTipus(this.value)">
-                <option value="link">Link (Imgur/Discord)</option>
-                <option value="szoveg">Megjegyzés</option>
-            </select>
-            <div id="igazolas-input-container">
-                <input type="text" id="kassza-bizonyitek" placeholder="https://...">
-            </div>
-            <div style="display:flex; gap:10px; margin-top:20px">
-                <button class="btn" onclick="veglegesitTranzakcio()">Megerősítés</button>
-                <button class="btn" style="border:none; color:var(--text-muted)" onclick="zárKasszaModal()">Mégse</button>
-            </div>
-        </div>
-    </div>
-
     <div id="profil-modal" class="modal-overlay" onclick="this.style.display='none'">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 id="modal-nev"></h2>
-            <p id="modal-rang"></p>
-            <p>Discord: <span id="modal-discord"></span></p>
-            <div id="modal-leiras" style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px;"></div>
+            <h2 id="modal-ic" style="color:var(--primary); margin:0"></h2>
+            <p id="modal-user" style="color:var(--text-muted); font-size:0.8rem;"></p>
+            <p id="modal-rang" style="color:var(--primary); font-weight:bold;"></p>
+            <p>Discord elérhetőség: <span id="modal-discord"></span></p>
+            <div id="modal-leiras"
+                style="background:rgba(0,0,0,0.4); padding:1rem; border:1px solid var(--primary-border); min-height:80px; margin-top:10px">
+            </div> <button class="btn" style="width: 100%; margin-top: 20px;"
+                onclick="document.getElementById('profil-modal').style.display='none'">Bezárás</button>
         </div>
     </div>
-
-    <script>
-        let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [];
-
-        async function apiFetch(url, options = {}) {
-            const token = localStorage.getItem('klani_token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-            options.headers = headers;
-            const res = await fetch(url, options);
-            if (!res.ok) { const d = await res.json(); alert(d.error); return null; }
-            return res;
-        }
-
-        async function bejelentkezes() {
-            const nev = document.getElementById('login-user').value, jelszo = document.getElementById('login-pass').value;
-            const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nev, jelszo}) });
-            const d = await res.json();
-            if (d.success) { localStorage.setItem('klani_token', d.token); location.reload(); }
-            else document.getElementById('login-hiba').innerText = d.error;
-        }
-
-        function tab(id, btn) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav')); btn.classList.add('active-nav'); }
-            if(id === 'profil-section') fetchProfil();
-        }
-
-        window.onload = async () => {
-            const token = localStorage.getItem('klani_token');
-            if (token) {
-                const decoded = JSON.parse(atob(token.split('.')[1]));
-                myUserId = decoded.id; myUserName = decoded.nev; myUserRang = decoded.rang; myPermissions = decoded;
-                document.getElementById('logged-in-user').innerText = 'FELHASZNÁLÓ: ' + myUserName;
-                document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang;
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('main-app').style.display = 'block';
-
-                const resJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await resJ.json();
-                if (myPermissions.jog_kezel) { document.getElementById('nav-jogok').style.display = 'block'; fetchJogok(); }
-                document.getElementById('uj-hir-doboz').style.display = myPermissions.hir_iras ? 'block' : 'none';
-                document.getElementById('tag-felvetel-box').style.display = myPermissions.tag_kezel ? 'block' : 'none';
-                fetchHirek(); fetchBalance(); fetchTagok(); fetchProfil();
-            }
-        };
-
-        async function fetchTagok() {
-            const res = await apiFetch('/api/tagok'); const tagok = await res.json();
-            const s = document.getElementById('uj-tag-rang-select'); if(s) { s.innerHTML = ''; ALL_RANGS.forEach(j => s.innerHTML += `<option value="${j.rang}">${j.rang}</option>`); }
-            const tbody = document.getElementById('tagok-lista'); tbody.innerHTML = '';
-            tagok.forEach(t => {
-                let muv = `<button class="btn" style="padding:2px 8px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">PROFIL</button>`;
-                if(myPermissions.jog_kezel) {
-                    muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--success)" onclick="nyitTagSzerkesztes(${t.id},'${t.nev}','${t.discord}','${t.rang}')">SZERKESZTÉS</button>`;
-                    muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger)" onclick="tagTorles(${t.id})">🗑️</button>`;
-                }
-                tbody.innerHTML += `<tr><td>${t.nev}<br><small>${t.discord||'-'}</small></td><td>${t.rang}</td><td>${muv}</td></tr>`;
-            });
-        }
-
-        function nyitTagSzerkesztes(id, n, d, r) {
-            editTargetId = id; document.getElementById('edit-tag-nev').value = n; document.getElementById('edit-tag-discord').value = d;
-            const s = document.getElementById('edit-tag-rang'); s.innerHTML = ''; ALL_RANGS.forEach(x => s.innerHTML += `<option value="${x.rang}" ${x.rang===r?'selected':''}>${x.rang}</option>`);
-            document.getElementById('edit-tag-modal').style.display = 'flex';
-        }
-
-        async function veglegesitTagSzerkesztes() {
-            const n = document.getElementById('edit-tag-nev').value, d = document.getElementById('edit-tag-discord').value, r = document.getElementById('edit-tag-rang').value;
-            await apiFetch(`/api/tagok/${editTargetId}`, { method:'PUT', body:JSON.stringify({nev:n, discord:d, rang:r}) });
-            document.getElementById('edit-tag-modal').style.display = 'none'; fetchTagok();
-        }
-
-        async function fetchJogok() {
-            const res = await apiFetch('/api/jogosultsagok'); const jogok = await res.json();
-            const tbody = document.getElementById('jogok-lista'); tbody.innerHTML = '';
-            jogok.forEach(j => {
-                let del = j.rang !== 'DEV' ? `<button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button>` : '-';
-                tbody.innerHTML += `<tr>
-                    <td><input type="text" value="${j.rang}" onchange="updateRang('${j.rang}','rang',this.value)" style="width:60px; margin:0"> 
-                        (<input type="number" value="${j.prioritas}" onchange="updateRang('${j.rang}','prioritas',this.value)" style="width:30px; margin:0">)</td>
-                    <td><input type="checkbox" ${j.hir_iras?'checked':''} onchange="updateRang('${j.rang}','hir_iras',this.checked)"></td>
-                    <td><input type="checkbox" ${j.hir_kezel?'checked':''} onchange="updateRang('${j.rang}','hir_kezel',this.checked)"></td>
-                    <td><input type="checkbox" ${j.kassza?'checked':''} onchange="updateRang('${j.rang}','kassza',this.checked)"></td>
-                    <td><input type="checkbox" ${j.tag_kezel?'checked':''} onchange="updateRang('${j.rang}','tag_kezel',this.checked)"></td>
-                    <td><input type="checkbox" ${j.jog_kezel?'checked':''} onchange="updateRang('${j.rang}','jog_kezel',this.checked)"></td>
-                    <td><input type="checkbox" ${j.nev_valtoztat?'checked':''} onchange="updateRang('${j.rang}','nev_valtoztat',this.checked)"></td>
-                    <td>${del}</td>
-                </tr>`;
-            });
-        }
-
-        function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); }
-        function inditTranzakcio(t) { 
-            const o = parseInt(document.getElementById('osszeg').value.replace(/\s/g, "")); if(!o) return;
-            aktualisTranzakcio = { tipus:t, osszeg:o };
-            document.getElementById('modal-osszeg-display').innerText = (t==='be'?'Befizetés: ':'Kivétel: ') + o.toLocaleString() + " $";
-            document.getElementById('kassza-modal').style.display = 'flex';
-        }
-        function valtsIgazolasTipus(v) { document.getElementById('igazolas-input-container').innerHTML = v==='link' ? '<input type="text" id="kassza-bizonyitek" placeholder="https://...">' : '<textarea id="kassza-bizonyitek" placeholder="Megjegyzés..."></textarea>'; }
-        async function veglegesitTranzakcio() { 
-            const b = document.getElementById('kassza-bizonyitek').value;
-            await apiFetch('/api/kassza', { method:'POST', body:JSON.stringify({...aktualisTranzakcio, bizonyitek:b, operator:myUserName}) });
-            location.reload(); 
-        }
-        function zárKasszaModal() { document.getElementById('kassza-modal').style.display='none'; }
-        async function fetchBalance() { 
-            const res = await apiFetch('/api/kassza'); const d = await res.json();
-            document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $';
-            const tbody = document.getElementById('kassza-log-lista'); tbody.innerHTML = '';
-            d.logs.forEach(l => {
-                const ig = l.bizonyitek?.startsWith('http') ? `<a href="${l.bizonyitek}" target="_blank" style="color:var(--primary)">LINK</a>` : (l.bizonyitek || '-');
-                tbody.innerHTML += `<tr><td>${new Date(l.datum).toLocaleDateString()}</td><td>${l.operator}</td><td style="color:${l.tipus==='be'?'var(--success)':'var(--danger)'}">${l.tipus.toUpperCase()}</td><td>${l.osszeg.toLocaleString()} $</td><td>${ig}</td></tr>`;
-            });
-        }
-
-        async function letrehozRang() { await apiFetch('/api/jogosultsagok', { method:'POST', body:JSON.stringify({rang:document.getElementById('uj-rang-nev').value, prioritas:parseInt(document.getElementById('uj-rang-prio').value)}) }); fetchJogok(); }
-        async function updateRang(r, m, e) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method:'PUT', body:JSON.stringify({mezo:m, ertek:e}) }); }
-        async function torolRang(r) { if(confirm("Törlöd?")) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, {method:'DELETE'}); fetchJogok(); } }
-        async function fetchHirek() { const res = await apiFetch('/api/hirek'); const h = await res.json(); const l = document.getElementById('hirek-lista'); l.innerHTML = ''; h.forEach(x => { let del = myPermissions.hir_kezel ? `<button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger); border:none" onclick="torolHir(${x.id})">🗑️</button>` : ''; l.innerHTML += `<div class="card"><div style="display:flex; justify-content:space-between"><strong>${x.cim}</strong>${del}</div><small>${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p>${x.tartalom}</p></div>`; }); }
-        async function posztolHir() { await apiFetch('/api/hirek', { method:'POST', body:JSON.stringify({cim:document.getElementById('hir-cim').value, tartalom:document.getElementById('hir-tartalom').value}) }); location.reload(); }
-        async function torolHir(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/hirek/${id}`, {method:'DELETE'}); fetchHirek(); } }
-        async function ujTagMentese() { await apiFetch('/api/tagok', { method:'POST', body:JSON.stringify({nev:document.getElementById('uj-tag-nev').value, discord:document.getElementById('uj-tag-discord').value, rang:document.getElementById('uj-tag-rang-select').value}) }); alert("Kész!"); fetchTagok(); }
-        async function tagTorles(id) { if(confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, {method:'DELETE'}); fetchTagok(); } }
-        async function megtekintProfil(id) { const res = await apiFetch(`/api/profil/${id}`); const p = await res.json(); document.getElementById('modal-nev').innerText = p.nev; document.getElementById('modal-rang').innerText = p.rang; document.getElementById('modal-discord').innerText = p.discord || '-'; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-'; document.getElementById('profil-modal').style.display = 'flex'; }
-        async function fetchProfil() { const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json(); document.getElementById('profil-section').innerHTML = `<div class="card"><h2 style="color:var(--primary); margin:0;">Saját Profil</h2><div style="margin: 20px 0; line-height: 1.8;"><p><strong>Név:</strong> ${p.nev}</p><p><strong>Rang:</strong> ${p.rang}</p><p><strong>Discord elérhetőség:</strong> ${p.discord || 'Nincs megadva'}</p></div><p><strong>Leírás szerkesztése:</strong></p><textarea id="input-bemutatkozas" rows="6">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%" onclick="mentesProfil()">Mentés</button></div>`; }
-        async function mentesProfil() { await apiFetch(`/api/profil/${myUserId}`, { method:'PUT', body:JSON.stringify({bemutatkozas:document.getElementById('input-bemutatkozas').value}) }); alert("Mentve!"); }
-        function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); }
-    </script>
+    <script> let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [], ALL_TAGOK = []; async function apiFetch(url, options = {}) { const token = localStorage.getItem('klani_token'); const headers = { 'Content-Type': 'application/json' }; if (token) headers['Authorization'] = `Bearer ${token}`; options.headers = headers; const res = await fetch(url, options); if (!res.ok) { const d = await res.json(); alert(d.error); return null; } return res; } async function bejelentkezes() { const nev = document.getElementById('login-user').value, jelszo = document.getElementById('login-pass').value; const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nev, jelszo }) }); const d = await res.json(); if (d.success) { localStorage.setItem('klani_token', d.token); location.reload(); } else document.getElementById('login-hiba').innerText = d.error; } function tab(id, btn) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if (btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav')); btn.classList.add('active-nav'); } if (id === 'profil-section') fetchProfil(); } window.onload = async () => { const token = localStorage.getItem('klani_token'); if (token) { const decoded = JSON.parse(atob(token.split('.')[1])); myUserId = decoded.id; myUserName = decoded.nev; myUserRang = decoded.rang; myPermissions = decoded; document.getElementById('logged-in-user').innerText = 'FELHASZNÁLÓ: ' + myUserName; document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; const resJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await resJ.json(); if (myPermissions.jog_kezel) { document.getElementById('nav-jogok').style.display = 'block'; fetchJogok(); } document.getElementById('uj-hir-doboz').style.display = myPermissions.hir_iras ? 'block' : 'none'; document.getElementById('kassza-controls').style.display = myPermissions.kassza ? 'block' : 'none'; document.getElementById('tag-felvetel-box').style.display = myPermissions.tag_kezel ? 'block' : 'none'; fetchHirek(); fetchBalance(); fetchTagok(); fetchProfil(); } }; async function fetchTagok() { const res = await apiFetch('/api/tagok'); ALL_TAGOK = await res.json(); const s = document.getElementById('uj-tag-rang-select'); if (s) { s.innerHTML = ''; ALL_RANGS.forEach(j => s.innerHTML += `<option value="${j.rang}">${j.rang}</option>`); } renderTagok(ALL_TAGOK); } function renderTagok(lista) { const tbody = document.getElementById('tagok-lista'); tbody.innerHTML = ''; lista.forEach(t => { let muv = `<button class="btn" style="padding:2px 8px; font-size:0.6rem" onclick="megtekintProfil(${t.id})">PROFIL</button>`; if (myPermissions.jog_kezel) { muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--success)" onclick="nyitTagSzerkesztes(${t.id},'${t.nev}','${t.ic_nev}','${t.discord}','${t.rang}')">SZERKESZTÉS</button>`; muv += ` <button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger)" onclick="tagTorles(${t.id})">🗑️</button>`; } tbody.innerHTML += `<tr><td><strong style="color:var(--primary)">${t.ic_nev || 'Nincs IC név'}</strong><br><small>User: ${t.nev}</small></td><td>${t.rang}</td><td>${muv}</td></tr>`; }); } function szuresTagok(val) { const v = val.toLowerCase(); const szurt = ALL_TAGOK.filter(t => (t.ic_nev || '').toLowerCase().includes(v) || t.nev.toLowerCase().includes(v) || (t.discord || '').toLowerCase().includes(v)); renderTagok(szurt); } function nyitTagSzerkesztes(id, n, ic, d, r) { editTargetId = id; document.getElementById('edit-tag-user').value = n; document.getElementById('edit-tag-ic').value = ic; document.getElementById('edit-tag-discord').value = d; const s = document.getElementById('edit-tag-rang'); s.innerHTML = ''; ALL_RANGS.forEach(x => s.innerHTML += `<option value="${x.rang}" ${x.rang === r ? 'selected' : ''}>${x.rang}</option>`); document.getElementById('edit-tag-modal').style.display = 'flex'; } async function veglegesitTagSzerkesztes() { const n = document.getElementById('edit-tag-user').value, ic = document.getElementById('edit-tag-ic').value, d = document.getElementById('edit-tag-discord').value, r = document.getElementById('edit-tag-rang').value; await apiFetch(`/api/tagok/${editTargetId}`, { method: 'PUT', body: JSON.stringify({ nev: n, ic_nev: ic, discord: d, rang: r }) }); document.getElementById('edit-tag-modal').style.display = 'none'; fetchTagok(); } async function megtekintProfil(id) { const res = await apiFetch(`/api/profil/${id}`); const p = await res.json(); document.getElementById('modal-ic').innerText = p.ic_nev || 'Nincs IC név'; document.getElementById('modal-user').innerText = 'User: ' + p.nev; document.getElementById('modal-rang').innerText = p.rang; document.getElementById('modal-discord').innerText = p.discord || '-'; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-'; document.getElementById('profil-modal').style.display = 'flex'; } async function fetchProfil() { const res = await apiFetch(`/api/profil/${myUserId}`); const p = await res.json(); document.getElementById('profil-section').innerHTML = `<div class="card"><h2 style="color:var(--primary); margin:0;">Saját Profil</h2><div style="margin: 20px 0; line-height: 1.8;"><p><strong>IC Név:</strong> ${p.ic_nev || 'Nincs megadva'}</p><p><strong>Felhasználó név:</strong> ${p.nev}</p><p><strong>Rang:</strong> ${p.rang}</p><p><strong>Discord elérhetőség:</strong> ${p.discord || 'Nincs megadva'}</p></div><p><strong>Leírás szerkesztése:</strong></p><textarea id="input-bemutatkozas" rows="6">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%" onclick="mentesProfil()">Mentés</button></div>`; } async function mentesProfil() { await apiFetch(`/api/profil/${myUserId}`, { method: 'PUT', body: JSON.stringify({ bemutatkozas: document.getElementById('input-bemutatkozas').value }) }); alert("Mentve!"); } function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " "); } function inditTranzakcio(t) { const o = parseInt(document.getElementById('osszeg').value.replace(/\s/g, "")); if (!o) return; aktualisTranzakcio = { tipus: t, osszeg: o }; document.getElementById('modal-osszeg-display').innerText = (t === 'be' ? 'Befizetés: ' : 'Kivétel: ') + o.toLocaleString() + " $"; document.getElementById('kassza-modal').style.display = 'flex'; } function valtsIgazolasTipus(v) { document.getElementById('igazolas-input-container').innerHTML = v === 'link' ? '<input type="text" id="kassza-bizonyitek" placeholder="https://...">' : '<textarea id="kassza-bizonyitek" placeholder="Megjegyzés..."></textarea>'; } async function veglegesitTranzakcio() { const b = document.getElementById('kassza-bizonyitek').value; await apiFetch('/api/kassza', { method: 'POST', body: JSON.stringify({ ...aktualisTranzakcio, bizonyitek: b, operator: myUserName }) }); location.reload(); } function zárKasszaModal() { document.getElementById('kassza-modal').style.display = 'none'; } async function fetchBalance() { const res = await apiFetch('/api/kassza'); const d = await res.json(); document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $'; const tbody = document.getElementById('kassza-log-lista'); tbody.innerHTML = ''; d.logs.forEach(l => { const ig = l.bizonyitek?.startsWith('http') ? `<a href="${l.bizonyitek}" target="_blank" style="color:var(--primary)">LINK</a>` : (l.bizonyitek || '-'); tbody.innerHTML += `<tr><td>${new Date(l.datum).toLocaleDateString()}</td><td>${l.operator}</td><td style="color:${l.tipus === 'be' ? 'var(--success)' : 'var(--danger)'}">${l.tipus.toUpperCase()}</td><td>${l.osszeg.toLocaleString()} $</td><td>${ig}</td></tr>`; }); } async function fetchJogok() { const res = await apiFetch('/api/jogosultsagok'); const jogok = await res.json(); const tbody = document.getElementById('jogok-lista'); tbody.innerHTML = ''; jogok.forEach(j => { let del = j.rang !== 'DEV' ? `<button onclick="torolRang('${j.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer">🗑️</button>` : '-'; tbody.innerHTML += `<tr><td><input type="text" value="${j.rang}" onchange="updateRang('${j.rang}','rang',this.value)" style="width:60px; margin:0"> (<input type="number" value="${j.prioritas}" onchange="updateRang('${j.rang}','prioritas',this.value)" style="width:30px; margin:0">)</td><td><input type="checkbox" ${j.hir_iras ? 'checked' : ''} onchange="updateRang('${j.rang}','hir_iras',this.checked)"></td><td><input type="checkbox" ${j.hir_kezel ? 'checked' : ''} onchange="updateRang('${j.rang}','hir_kezel',this.checked)"></td><td><input type="checkbox" ${j.kassza ? 'checked' : ''} onchange="updateRang('${j.rang}','kassza',this.checked)"></td><td><input type="checkbox" ${j.tag_kezel ? 'checked' : ''} onchange="updateRang('${j.rang}','tag_kezel',this.checked)"></td><td><input type="checkbox" ${j.jog_kezel ? 'checked' : ''} onchange="updateRang('${j.rang}','jog_kezel',this.checked)"></td><td><input type="checkbox" ${j.nev_valtoztat ? 'checked' : ''} onchange="updateRang('${j.rang}','nev_valtoztat',this.checked)"></td><td>${del}</td></tr>`; }); } async function fetchHirek() { const res = await apiFetch('/api/hirek'); const h = await res.json(); const l = document.getElementById('hirek-lista'); l.innerHTML = ''; h.forEach(x => { let d = myPermissions.hir_kezel ? `<button class="btn" style="padding:2px 8px; font-size:0.6rem; color:var(--danger); border:none" onclick="torolHir(${x.id})">🗑️</button>` : ''; l.innerHTML += `<div class="card"><div style="display:flex; justify-content:space-between"><strong>${x.cim}</strong>${d}</div><small>${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p>${x.tartalom}</p></div>`; }); } async function ujTagMentese() { const n = document.getElementById('uj-tag-user').value, ic = document.getElementById('uj-tag-ic').value, d = document.getElementById('uj-tag-discord').value, r = document.getElementById('uj-tag-rang-select').value; await apiFetch('/api/tagok', { method: 'POST', body: JSON.stringify({ nev: n, ic_nev: ic, discord: d, rang: r }) }); alert("Kész!"); fetchTagok(); } async function letrehozRang() { await apiFetch('/api/jogosultsagok', { method: 'POST', body: JSON.stringify({ rang: document.getElementById('uj-rang-nev').value, prioritas: parseInt(document.getElementById('uj-rang-prio').value) }) }); fetchJogok(); } async function updateRang(r, m, e) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'PUT', body: JSON.stringify({ mezo: m, ertek: e }) }); } async function torolRang(r) { if (confirm("Törlöd?")) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'DELETE' }); fetchJogok(); } } async function tagTorles(id) { if (confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, { method: 'DELETE' }); fetchTagok(); } } async function posztolHir() { await apiFetch('/api/hirek', { method: 'POST', body: JSON.stringify({ cim: document.getElementById('hir-cim').value, tartalom: document.getElementById('hir-tartalom').value }) }); location.reload(); } async function torolHir(id) { if (confirm("Törlöd?")) { await apiFetch(`/api/hirek/${id}`, { method: 'DELETE' }); fetchHirek(); } } function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload(); } </script>
 </body>
+
 </html>
