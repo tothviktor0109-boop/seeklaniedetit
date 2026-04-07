@@ -260,20 +260,20 @@ async function fetchBalance() {
     const res = await apiFetch('/api/kassza');
     const d = await res.json();
     
-    // Egyenleg megjelenítése
+    // Egyenleg frissítése
     document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $';
     
-    // Napló (táblázat) frissítése
+    // Táblázat (Napló) frissítése
     const tbody = document.getElementById('kassza-log-lista');
-    tbody.innerHTML = '';
+    tbody.innerHTML = ''; // Kiürítjük a régit
     d.logs.forEach(log => {
         tbody.innerHTML += `
             <tr>
                 <td>${new Date(log.datum).toLocaleString()}</td>
                 <td>${log.operator}</td>
-                <td style="color: ${log.tipus === 'be' ? 'var(--success)' : 'var(--danger)'}">${log.tipus === 'be' ? 'BEVÉTEL' : 'KIADÁS'}</td>
+                <td style="color: ${log.tipus === 'be' ? '#00ff88' : '#ff0055'}">${log.tipus === 'be' ? 'BEVÉTEL' : 'KIADÁS'}</td>
                 <td>${log.osszeg.toLocaleString()} $</td>
-                <td><small>Terminal</small></td>
+                <td>Terminal</td>
             </tr>`;
     });
 }
