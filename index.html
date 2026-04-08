@@ -310,7 +310,66 @@
         async function bejelentkezes() { const nev = document.getElementById('login-user').value, jelszo = document.getElementById('login-pass').value; const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nev, jelszo}) }); const d = await res.json(); if (d.success) { if (d.elso_belepes) { window.tempId = d.user.id; document.getElementById('login-screen').style.display='none'; document.getElementById('main-app').style.display='block'; tab('password-screen', null); } else { localStorage.setItem('klani_token', d.token); location.reload(); } } else document.getElementById('login-hiba').innerText = d.error; }
         function tab(id, btn) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); if(btn) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav')); btn.classList.add('active-nav'); } if(id === 'profil-section') fetchProfil(); if(id === 'akcio-section') fetchAkciok(); if(id === 'warn-section') fetchWarnList(); if(id === 'leadando-section') fetchLeadando(); }
         window.onload = async () => { const token = localStorage.getItem('klani_token'); if (token) { const decoded = JSON.parse(atob(token.split('.')[1])); myUserId = decoded.id; myUserName = decoded.nev; myUserRang = decoded.rang; myPermissions = decoded; document.getElementById('logged-in-user').innerText = 'Felhasználó: ' + myUserName; document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; const resJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await resJ.json(); if (myPermissions.jog_admin) { document.getElementById('nav-jogok').style.display = 'block'; fetchJogok(); } if (myPermissions.jog_akcio) { document.getElementById('uj-akcio-box').style.display = 'block'; } if (myUserRang === 'DEV') { document.getElementById('szezon-zaras-btn').style.display = 'block'; } if (myPermissions.jog_warn) { document.getElementById('nav-warn').style.display = 'block'; } if (myPermissions.tag_kezel || myPermissions.jog_admin) { document.getElementById('leadando-admin-box').style.display = 'block'; } document.getElementById('uj-hir-doboz').style.display = myPermissions.hir_iras ? 'block' : 'none'; document.getElementById('kassza-controls').style.display = myPermissions.kassza ? 'flex' : 'none'; document.getElementById('tag-felvetel-box').style.display = myPermissions.tag_kezel ? 'block' : 'none'; fetchHirek(); fetchBalance(); fetchTagok(); fetchProfil(); fetchAkciok(); fetchLeadando(); } };
-        async function fetchLeadando() { const res = await apiFetch('/api/leadando'); const d = await res.json(); const myData = d.tagok.find(t => t.id === myUserId); const navBtn = document.getElementById('nav-leadando'); if (myData) { const befizetve = myData.heti_leadva || 0; const kotelezo = myData.kotelezo || 0; if (kotelezo === 0) { document.getElementById('leadando-sajat-display').innerHTML = `<span style="color:var(--text-muted)">Neked nincsen heti leadandód!</span>`; navBtn.classList.remove('nav-btn-warn'); document.getElementById('leadando-befizetes-box').style.display = 'none'; } else { document.getElementById('leadando-befizetes-box').style.display = 'flex'; if (befizetve >= kotelezo) { document.getElementById('leadando-sajat-display').innerHTML = `<span style="color:var(--success)">Teljesítve: ${befizetve.toLocaleString()} $ / ${kotelezo.toLocaleString()} $</span>`; navBtn.classList.remove('nav-btn-warn'); } else { document.getElementById('leadando-sajat-display').innerHTML = `<span style="color:var(--danger)">Hiányzik: ${befizetve.toLocaleString()} $ / ${kotelezo.toLocaleString()} $</span>`; navBtn.classList.add('nav-btn-warn'); } } } if (myPermissions.tag_kezel || myPermissions.jog_admin) { const tbody = document.getElementById('leadando-admin-lista'); tbody.innerHTML = ''; d.tagok.filter(t => t.rang !== 'DEV').forEach(t => { const bef = t.heti_leadva || 0; const kot = t.kotelezo || 0; if (kot === 0) return; const kesz = bef >= kot; tbody.innerHTML += `<tr><td><strong style="color:var(--text)">${t.ic_nev || t.nev}</strong></td><td>${t.rang}</td><td style="color:${kesz ? 'var(--success)' : 'var(--danger)'}">${bef.toLocaleString()} $</td><td style="color:var(--text-muted)">${kot.toLocaleString()} $</td><td>${kesz ? '<span style="color:var(--success); font-weight:bold;">✔️</span>' : '<span style="color:var(--danger); font-weight:bold;">❌</span>'}</td></tr>`; }); } }
+        async function fetchLeadando() {
+            try {
+                const res = await apiFetch('/api/leadando'); const d = await res.json();
+                const myData = d.tagok ? d.tagok.find(t => t.id === myUserId) : null;
+                
+                const navBtn = document.getElementById('nav-leadando');
+                const kijelzo = document.getElementById('leadando-sajat-display');
+                const gombDoboz = document.getElementById('leadando-befizetes-box');
+
+                if (myData && kijelzo) {
+                    const befizetve = myData.heti_leadva || 0; const kotelezo = myData.kotelezo || 0;
+                    if (kotelezo === 0) {
+                        kijelzo.innerHTML = `<span style="color:var(--text-muted)">Neked nincsen leadandód!</span>`;
+                        if(navBtn) navBtn.classList.remove('nav-btn-warn'); 
+                        if(gombDoboz) gombDoboz.style.display = 'none';
+                    } else {
+                        if(gombDoboz) gombDoboz.style.display = 'flex';
+                        if (befizetve >= kotelezo) {
+                            kijelzo.innerHTML = `<span style="color:var(--success)">Teljesítve: ${befizetve.toLocaleString()} $ / ${kotelezo.toLocaleString()} $</span>`;
+                            if(navBtn) navBtn.classList.remove('nav-btn-warn');
+                        } else {
+                            kijelzo.innerHTML = `<span style="color:var(--danger)">Hiányzik: ${befizetve.toLocaleString()} $ / ${kotelezo.toLocaleString()} $</span>`;
+                            if(navBtn) navBtn.classList.add('nav-btn-warn'); 
+                        }
+                    }
+                }
+
+                const adminLista = document.getElementById('leadando-admin-lista');
+                if (adminLista && (myPermissions.tag_kezel || myPermissions.jog_admin)) {
+                    adminLista.innerHTML = '';
+                    d.tagok.filter(t => t.rang !== 'DEV').forEach(t => {
+                        const bef = t.heti_leadva || 0; const kot = t.kotelezo || 0;
+                        if (kot === 0) return; 
+                        const kesz = bef >= kot;
+                        adminLista.innerHTML += `<tr><td><strong style="color:var(--text)">${t.ic_nev || t.nev}</strong></td><td>${t.rang}</td><td style="color:${kesz ? 'var(--success)' : 'var(--danger)'}">${bef.toLocaleString()} $</td><td style="color:var(--text-muted)">${kot.toLocaleString()} $</td><td>${kesz ? '<span style="color:var(--success); font-weight:bold;">✔️</span>' : '<span style="color:var(--danger); font-weight:bold;">❌</span>'}</td></tr>`;
+                    });
+                }
+            } catch (e) {
+                console.error("Hiba a leadandó betöltésekor:", e);
+                if(document.getElementById('leadando-sajat-display')) document.getElementById('leadando-sajat-display').innerHTML = "<span style='color:red'>Hiba a betöltéskor!</span>";
+            }
+        }
+
+        async function inditLeadando() {
+            const osszegInput = document.getElementById('leadando-osszeg');
+            const o = osszegInput ? osszegInput.value.replace(/\s/g, "") : 0;
+            const linkInput = document.getElementById('leadando-link');
+            const link = linkInput ? linkInput.value : '';
+            
+            if(!o || isNaN(o) || parseInt(o) <= 0) return alert("Érvénytelen összeg!");
+            if(linkInput && (!link || !link.startsWith('http'))) return alert("Kérlek adj meg egy érvényes igazoló linket (Imgur vagy Discord), ami 'https'-el kezdődik!");
+            
+            if(confirm(`Megerősíted ${parseInt(o).toLocaleString()}$ leadandó befizetését a kasszába?`)) {
+                await apiFetch('/api/leadando', { method:'POST', body: JSON.stringify({osszeg: o, bizonyitek: link || 'Nincs link'}) });
+                alert("Befizetés sikeresen rögzítve!"); 
+                if(osszegInput) osszegInput.value = ''; 
+                if(linkInput) linkInput.value = ''; 
+                fetchLeadando(); fetchBalance();
+            }
+        }
         async function inditLeadando() { const o = document.getElementById('leadando-osszeg').value.replace(/\s/g, ""); const link = document.getElementById('leadando-link').value; if(!o || isNaN(o) || parseInt(o) <= 0) return alert("Érvénytelen összeg!"); if(!link || !link.startsWith('http')) return alert("Kérlek adj meg egy érvényes igazoló linket (pl. Imgur vagy Discord), ami 'https'-el kezdődik!"); if(confirm(`Megerősíted ${parseInt(o).toLocaleString()}$ leadandó befizetését a kasszába?`)) { await apiFetch('/api/leadando', { method:'POST', body: JSON.stringify({osszeg: o, bizonyitek: link}) }); alert("Befizetés sikeresen rögzítve!"); document.getElementById('leadando-osszeg').value = ''; document.getElementById('leadando-link').value = ''; fetchLeadando(); fetchBalance(); } }
         async function fetchWarnList() { if(!myPermissions.jog_warn) return; const res = await apiFetch('/api/warn'); const warns = await res.json(); const tbody = document.getElementById('warn-lista'); tbody.innerHTML = ''; warns.forEach(w => { const isExpired = w.lejaret && new Date(w.lejaret) < new Date(); const isActive = w.aktiv && !isExpired; let badge = isActive ? '<span class="badge badge-active">AKTÍV</span>' : '<span class="badge badge-expired">LEJÁRT/VISSZAVONT</span>'; let muv = isActive ? `<button class="btn btn-warn" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="vonWarn(${w.id})">Visszavonás</button>` : ''; muv += ` <button class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.7rem; border:none;" onclick="torolWarn(${w.id})">🗑️</button>`; const targetTag = ALL_TAGOK.find(t => t.id === w.tag_id); const targetNev = targetTag ? (targetTag.ic_nev || targetTag.nev) : 'Törölt Tag'; let lejaratStr = w.lejaret ? new Date(w.lejaret).toLocaleDateString() : 'Végleges'; tbody.innerHTML += `<tr><td style="color:var(--text-muted)">${new Date(w.datum).toLocaleDateString()}</td><td><strong style="color:var(--text)">${targetNev}</strong></td><td>${w.szervezo_nev}</td><td>${lejaratStr}</td><td>${badge}</td><td>${muv}</td></tr><tr><td colspan="6" style="padding-top:0; border-top:none; color:var(--text-muted); font-size:0.8rem;">Indok: <em>${w.indok}</em></td></tr>`; }); }
         async function kiosztWarn() { const t = document.getElementById('warn-tag-select').value, n = document.getElementById('warn-napok').value, i = document.getElementById('warn-indok').value; if(!t || !i) return alert("Minden mező kitöltése kötelező!"); await apiFetch('/api/warn', { method:'POST', body:JSON.stringify({tag_id: t, indok: i, napok: n}) }); alert("Figyelmeztetés kiosztva!"); document.getElementById('warn-indok').value = ''; fetchWarnList(); }
