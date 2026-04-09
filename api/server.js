@@ -93,7 +93,7 @@ export default async function handler(req, res) {
             const { data: t } = await supabase.from('tagok').select('*').eq('id', user.id).single();
             if (!t) return res.json({ valid: false, deleted: true }); // Ha törölték a tagot
             
-            // Ha megváltozott a rangja, csendben új tokent adunk neki
+            // Ha megváltozott a rangja, új tokent ad neki
             if (t.rang !== user.rang) {
                 const { data: jog } = await supabase.from('jogosultsagok').select('*').eq('rang', t.rang).single();
                 const isDev = t.rang === 'DEV';
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
                 const { data: t } = await supabase.from('tagok').select('akcio_szervezett').eq('id', user.id).single(); 
                 await supabase.from('tagok').update({ akcio_szervezett: (t.akcio_szervezett || 0) + 1 }).eq('id', user.id); 
 
-                const DISCORD_WEBHOOK_URL = 'TE_DISCORD_WEBHOOK_LINKED_IDE_JON'; // <-- DISCORD LINK!
+                const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti';
                 try {
                     const discordMessage = {
                         content: "🚨 **Új esemény** 🚨 <@&1491389401606000661>",
