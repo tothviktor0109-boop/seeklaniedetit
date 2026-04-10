@@ -6,7 +6,6 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 const JWT_SECRET = process.env.JWT_SECRET || 'titkos-kulcs-123';
 const SALT_ROUNDS = 10;
 
-// Automata Hétfő 20:00 Lezárás és Warn osztás
 async function checkAndProcessZaras() {
     try {
         const { data: bData } = await supabase.from('beallitasok').select('ertek').eq('kulcs', 'kov_zaras').single();
@@ -21,7 +20,6 @@ async function checkAndProcessZaras() {
         }
 
         const nextZaras = new Date(nextZarasStr);
-        
         if (new Date() >= nextZaras) {
             let ujZaras = new Date(nextZaras);
             ujZaras.setDate(ujZaras.getDate() + 7);
@@ -29,7 +27,6 @@ async function checkAndProcessZaras() {
 
             const { data: tagok } = await supabase.from('tagok').select('id, rang, heti_leadva');
             const { data: rangok } = await supabase.from('jogosultsagok').select('rang, leadando');
-
             const warnsToInsert = [];
             const lejarat = new Date();
             lejarat.setDate(lejarat.getDate() + 30); 
@@ -37,7 +34,6 @@ async function checkAndProcessZaras() {
             tagok.forEach(t => {
                 const rData = rangok.find(r => r.rang === t.rang);
                 const quota = rData ? rData.leadando : 0;
-                
                 if (quota > 0 && t.heti_leadva < quota) {
                     warnsToInsert.push({ tag_id: t.id, szervezo_id: null, szervezo_nev: 'RENDSZER AUTOMA', indok: `Leadandó hiánya (Leadva: ${t.heti_leadva}$ / ${quota}$)`, lejaret: lejarat.toISOString() });
                 }
@@ -69,7 +65,6 @@ export default async function handler(req, res) {
             
             const jelszoEgyezik = await bcrypt.compare(jelszo, tag.jelszo);
             if (!jelszoEgyezik && jelszo !== tag.jelszo) return res.status(401).json({ error: 'Hibás adatok!' });
-            
             if (tag.elso_belepes) return res.json({ success: true, elso_belepes: true, user: { id: tag.id } });
             
             const { data: jog } = await supabase.from('jogosultsagok').select('*').eq('rang', tag.rang).single();
@@ -81,19 +76,16 @@ export default async function handler(req, res) {
                 nev_valtoztat: isDev || jog?.nev_valtoztat || false, tag_kezel: isDev || jog?.tag_kezel || false, 
                 kassza: isDev || jog?.kassza || false, hir_iras: isDev || jog?.hir_iras || false,
                 jog_akcio: isDev || jog?.jog_akcio || false, jog_lezart_akcio: isDev || jog?.jog_lezart_akcio || false,
-                jog_warn: isDev || jog?.jog_warn || false
+                jog_warn: isDev || jog?.jog_warn || false, jog_akcio_tervezes: isDev || jog?.jog_akcio_tervezes || false
             }, JWT_SECRET);
             return res.json({ success: true, token });
         }
 
-// --- BIZTONSÁGI ELLENŐRZŐ ÉS TOKEN FRISSÍTŐ ---
+        // --- BIZTONSÁGI ELLENŐRZŐ ---
         if (path === '/api/auth/check' && method === 'GET') {
             if (!user) return res.status(401).json({ valid: false, deleted: true });
-            
             const { data: t } = await supabase.from('tagok').select('*').eq('id', user.id).single();
-            if (!t) return res.json({ valid: false, deleted: true }); // Ha törölték a tagot
-            
-            // Ha megváltozott a rangja, új tokent ad neki
+            if (!t) return res.json({ valid: false, deleted: true }); 
             if (t.rang !== user.rang) {
                 const { data: jog } = await supabase.from('jogosultsagok').select('*').eq('rang', t.rang).single();
                 const isDev = t.rang === 'DEV';
@@ -103,7 +95,7 @@ export default async function handler(req, res) {
                     nev_valtoztat: isDev || jog?.nev_valtoztat || false, tag_kezel: isDev || jog?.tag_kezel || false, 
                     kassza: isDev || jog?.kassza || false, hir_iras: isDev || jog?.hir_iras || false,
                     jog_akcio: isDev || jog?.jog_akcio || false, jog_lezart_akcio: isDev || jog?.jog_lezart_akcio || false,
-                    jog_warn: isDev || jog?.jog_warn || false
+                    jog_warn: isDev || jog?.jog_warn || false, jog_akcio_tervezes: isDev || jog?.jog_akcio_tervezes || false
                 }, JWT_SECRET);
                 return res.json({ valid: true, newToken });
             }
@@ -143,19 +135,23 @@ export default async function handler(req, res) {
             if (method === 'DELETE') { await supabase.from('figyelmeztetesek').delete().eq('id', id); return res.json({ success: true }); }
         }
 
-        // --- AKCIÓK ÉS DISCORD ---
+        // --- AKCIÓK (JELENTKEZÉS ÉS KIJELENTKEZÉS) ---
         if (path === '/api/akcio') {
             if (method === 'GET') { const { data } = await supabase.from('akciok').select('*').order('datum', { ascending: false }); return res.json(data || []); }
             if (method === 'POST') {
-                await supabase.from('akciok').insert([{ tipus: req.body.tipus, szervezo_id: user.id, szervezo_nev: user.ic_nev || user.nev }]);
+                const tervezett = req.body.tervezett_ido ? req.body.tervezett_ido : null;
+                await supabase.from('akciok').insert([{ tipus: req.body.tipus, szervezo_id: user.id, szervezo_nev: user.ic_nev || user.nev, tervezett_ido: tervezett }]);
                 const { data: t } = await supabase.from('tagok').select('akcio_szervezett').eq('id', user.id).single(); 
                 await supabase.from('tagok').update({ akcio_szervezett: (t.akcio_szervezett || 0) + 1 }).eq('id', user.id); 
 
-                const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti';
+                const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti'; 
                 try {
+                    let desc = `**Szervező:** ${user.ic_nev || user.nev}`;
+                    if(tervezett) desc += `\n**Tervezett időpont:** ${new Date(tervezett).toLocaleString('hu-HU')}\n\nWeben tudtok jelentkezni!`;
+                    
                     const discordMessage = {
                         content: "🚨 **Új esemény** 🚨 <@&1491389401606000661>",
-                        embeds: [{ title: `[ ${req.body.tipus} ]`, description: `**Szervező:** ${user.ic_nev || user.nev}`, color: 3066993, timestamp: new Date().toISOString() }]
+                        embeds: [{ title: `[ ${req.body.tipus} ]`, description: desc, color: 3066993, timestamp: new Date().toISOString() }]
                     };
                     await fetch(DISCORD_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(discordMessage) });
                 } catch (err) {}
@@ -164,12 +160,24 @@ export default async function handler(req, res) {
         }
         if (path.startsWith('/api/akcio/') && !path.includes('archiválás')) {
             const id = path.split('/')[3], action = path.split('/')[4];
+            
+            // JELENTKEZÉS
             if (method === 'PUT' && action === 'join') {
                 const { data: a } = await supabase.from('akciok').select('resztvevok').eq('id', id).single(); 
                 let r = a.resztvevok || []; r.push({ id: user.id, nev: user.nev, ic_nev: user.ic_nev, ido: new Date().toISOString() });
                 await supabase.from('akciok').update({ resztvevok: r }).eq('id', id); 
                 const { data: t } = await supabase.from('tagok').select('akcio_resztvett').eq('id', user.id).single(); 
                 await supabase.from('tagok').update({ akcio_resztvett: (t.akcio_resztvett || 0) + 1 }).eq('id', user.id); 
+                return res.json({ success: true });
+            }
+            // KIJELENTKEZÉS
+            if (method === 'PUT' && action === 'leave') {
+                const { data: a } = await supabase.from('akciok').select('resztvevok').eq('id', id).single(); 
+                let r = a.resztvevok || []; 
+                const ujResztvevok = r.filter(x => x.id !== user.id);
+                await supabase.from('akciok').update({ resztvevok: ujResztvevok }).eq('id', id); 
+                const { data: t } = await supabase.from('tagok').select('akcio_resztvett').eq('id', user.id).single(); 
+                await supabase.from('tagok').update({ akcio_resztvett: Math.max(0, (t.akcio_resztvett || 0) - 1) }).eq('id', user.id); 
                 return res.json({ success: true });
             }
             if (method === 'PUT' && action === 'close') { await supabase.from('akciok').update({ aktiv: false }).eq('id', id); return res.json({ success: true }); }
