@@ -147,7 +147,7 @@ export default async function handler(req, res) {
                 const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti'; 
                 try {
                     let desc = `**Szervező:** ${user.ic_nev || user.nev}`;
-                    if(tervezett) desc += `\n**Tervezett időpont:** ${new Date(tervezett).toLocaleString('hu-HU')}\n\nWeben tudtok jelentkezni!`;
+                    if(tervezett) desc += `\n**Tervezett időpont:** ${new Date(tervezett).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })}\n\nWeben tudtok jelentkezni!`;
                     
                     const discordMessage = {
                         content: "🚨 **Új esemény** 🚨 <@&1491389401606000661>",
