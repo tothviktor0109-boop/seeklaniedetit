@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     try {
         await checkAndProcessZaras();
 
-        // --- LOGIN ---
+        // LOGIN
         if (path === '/api/login' && method === 'POST') {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
@@ -77,11 +77,11 @@ export default async function handler(req, res) {
                 kassza: isDev || jog?.kassza || false, hir_iras: isDev || jog?.hir_iras || false,
                 jog_akcio: isDev || jog?.jog_akcio || false, jog_lezart_akcio: isDev || jog?.jog_lezart_akcio || false,
                 jog_warn: isDev || jog?.jog_warn || false, jog_akcio_tervezes: isDev || jog?.jog_akcio_tervezes || false
-            }, JWT_SECRET);
+            }, JWT_SECRET, { expiresIn: '24h' });
             return res.json({ success: true, token });
         }
 
-        // --- BIZTONSÁGI ELLENŐRZŐ ---
+        // BIZTONSÁGI ELLENŐRZŐ
         if (path === '/api/auth/check' && method === 'GET') {
             if (!user) return res.status(401).json({ valid: false, deleted: true });
             const { data: t } = await supabase.from('tagok').select('*').eq('id', user.id).single();
@@ -89,6 +89,7 @@ export default async function handler(req, res) {
             if (t.rang !== user.rang) {
                 const { data: jog } = await supabase.from('jogosultsagok').select('*').eq('rang', t.rang).single();
                 const isDev = t.rang === 'DEV';
+                
                 const newToken = jwt.sign({ 
                     id: t.id, nev: t.nev, ic_nev: t.ic_nev, rang: t.rang, prio: jog?.prioritas || 99, 
                     jog_admin: isDev || jog?.jog_admin || false, hir_kezel: isDev || jog?.hir_kezel || false, 
@@ -96,13 +97,13 @@ export default async function handler(req, res) {
                     kassza: isDev || jog?.kassza || false, hir_iras: isDev || jog?.hir_iras || false,
                     jog_akcio: isDev || jog?.jog_akcio || false, jog_lezart_akcio: isDev || jog?.jog_lezart_akcio || false,
                     jog_warn: isDev || jog?.jog_warn || false, jog_akcio_tervezes: isDev || jog?.jog_akcio_tervezes || false
-                }, JWT_SECRET);
+                }, JWT_SECRET, { expiresIn: '24h' });
                 return res.json({ valid: true, newToken });
             }
             return res.json({ valid: true });
         }
 
-        // --- LEADANDÓ ---
+        // LEADANDÓ
         if (path === '/api/leadando') {
             if (method === 'GET') {
                 const { data: tagok } = await supabase.from('tagok').select('id, nev, ic_nev, rang, heti_leadva');
@@ -119,7 +120,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // --- WARN ---
+        // WARN
         if (path === '/api/warn') {
             if (method === 'GET') { const { data } = await supabase.from('figyelmeztetesek').select('*').order('datum', { ascending: false }); return res.json(data || []); }
             if (method === 'POST') {
@@ -135,7 +136,7 @@ export default async function handler(req, res) {
             if (method === 'DELETE') { await supabase.from('figyelmeztetesek').delete().eq('id', id); return res.json({ success: true }); }
         }
 
-        // --- AKCIÓK (JELENTKEZÉS ÉS KIJELENTKEZÉS) ---
+        // AKCIÓK
         if (path === '/api/akcio') {
             if (method === 'GET') { const { data } = await supabase.from('akciok').select('*').order('datum', { ascending: false }); return res.json(data || []); }
             if (method === 'POST') {
@@ -144,7 +145,7 @@ export default async function handler(req, res) {
                 const { data: t } = await supabase.from('tagok').select('akcio_szervezett').eq('id', user.id).single(); 
                 await supabase.from('tagok').update({ akcio_szervezett: (t.akcio_szervezett || 0) + 1 }).eq('id', user.id); 
 
-                const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti'; 
+                const DISCORD_WEBHOOK_URL = 'TE_DISCORD_WEBHOOK_LINKED_IDE_JON'; 
                 try {
                     let desc = `**Szervező:** ${user.ic_nev || user.nev}`;
                     if(tervezett) desc += `\n**Tervezett időpont:** ${new Date(tervezett).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })}\n\nWeben tudtok jelentkezni!`;
@@ -161,7 +162,6 @@ export default async function handler(req, res) {
         if (path.startsWith('/api/akcio/') && !path.includes('archiválás')) {
             const id = path.split('/')[3], action = path.split('/')[4];
             
-            // JELENTKEZÉS
             if (method === 'PUT' && action === 'join') {
                 const { data: a } = await supabase.from('akciok').select('resztvevok').eq('id', id).single(); 
                 let r = a.resztvevok || []; r.push({ id: user.id, nev: user.nev, ic_nev: user.ic_nev, ido: new Date().toISOString() });
@@ -170,7 +170,6 @@ export default async function handler(req, res) {
                 await supabase.from('tagok').update({ akcio_resztvett: (t.akcio_resztvett || 0) + 1 }).eq('id', user.id); 
                 return res.json({ success: true });
             }
-            // KIJELENTKEZÉS
             if (method === 'PUT' && action === 'leave') {
                 const { data: a } = await supabase.from('akciok').select('resztvevok').eq('id', id).single(); 
                 let r = a.resztvevok || []; 
@@ -187,7 +186,7 @@ export default async function handler(req, res) {
             await supabase.from('tagok').update({ akcio_szervezett: 0, akcio_resztvett: 0 }).gt('id', 0); return res.json({ success: true }); 
         }
 
-        // --- KASSZA ---
+        // KASSZA
         if (path === '/api/kassza') {
             if (method === 'GET') { 
                 const { data: a } = await supabase.from('kassza_log').select('osszeg, tipus'); const { data: l } = await supabase.from('kassza_log').select('*').order('datum', { ascending: false }).limit(30); 
@@ -196,7 +195,7 @@ export default async function handler(req, res) {
             if (method === 'POST') { await supabase.from('kassza_log').insert([{ tipus: req.body.tipus, osszeg: parseInt(req.body.osszeg), operator: req.body.operator, bizonyitek: req.body.bizonyitek }]); return res.json({ success: true }); }
         }
 
-        // --- TAGOK ÉS JOGOK ---
+        // TAGOK ÉS JOGOK
         if (path === '/api/tagok' && method === 'GET') { const { data: t } = await supabase.from('tagok').select('*'); const { data: r } = await supabase.from('jogosultsagok').select('*'); return res.json(t.map(x => ({ ...x, prioritas: r.find(y => y.rang === x.rang)?.prioritas || 999 })).sort((a, b) => a.prioritas - b.prioritas)); }
         if (path === '/api/tagok' && method === 'POST') { const hp = await bcrypt.hash('123456', SALT_ROUNDS); const { error } = await supabase.from('tagok').insert([{ ...req.body, jelszo: hp, elso_belepes: true }]); if(error) return res.status(400).json({error:'Név már létezik!'}); return res.json({ success: true }); }
         if (path.startsWith('/api/tagok/')) { const id = path.split('/').pop(); if (method === 'PUT') { await supabase.from('tagok').update(req.body).eq('id', id); return res.json({ success: true }); } if (method === 'DELETE') { await supabase.from('tagok').delete().eq('id', id); return res.json({ success: true }); } }
@@ -205,7 +204,7 @@ export default async function handler(req, res) {
         if (path === '/api/jogosultsagok' && method === 'POST') { await supabase.from('jogosultsagok').insert([req.body]); return res.json({ success: true }); }
         if (path.startsWith('/api/jogosultsagok/')) { const r = decodeURIComponent(path.split('/').pop()); if (method === 'PUT') { await supabase.from('jogosultsagok').update(req.body).eq('rang', r); return res.json({ success: true }); } if (method === 'DELETE') { await supabase.from('jogosultsagok').delete().eq('rang', r); return res.json({ success: true }); } }
 
-        // --- PROFIL ---
+        // PROFIL
         if (path.startsWith('/api/profil/')) { 
             const id = parseInt(path.split('/').pop()); 
             if (method === 'GET') { 
@@ -215,7 +214,7 @@ export default async function handler(req, res) {
             } else { await supabase.from('tagok').update(req.body).eq('id', id); return res.json({ success: true }); } 
         }
 
-        // --- HÍREK ÉS JELSZÓ ---
+        // HÍREK ÉS JELSZÓ
         if (path === '/api/hirek') { if (method === 'GET') { const { data } = await supabase.from('hirek').select('*').order('datum', { ascending: false }); return res.json(data); } else { await supabase.from('hirek').insert([{ ...req.body, iro: user.nev }]); return res.json({ success: true }); } }
         if (path.startsWith('/api/hirek/') && method === 'DELETE') { await supabase.from('hirek').delete().eq('id', path.split('/').pop()); return res.json({ success: true }); }
         if (path === '/api/jelszocsere' && method === 'POST') { const hp = await bcrypt.hash(req.body.ujJelszo, SALT_ROUNDS); await supabase.from('tagok').update({ jelszo: hp, elso_belepes: false }).eq('id', req.body.userId); return res.json({ success: true }); }
