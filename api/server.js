@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     try {
         await checkAndProcessZaras();
 
-        // LOGIN
+        //LOGIN
         if (path === '/api/login' && method === 'POST') {
             const { nev, jelszo } = req.body;
             const { data: tag } = await supabase.from('tagok').select('*').eq('nev', nev).single();
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
             return res.json({ success: true, token });
         }
 
-        // BIZTONSÁGI ELLENŐRZŐ
+        //BIZTONSÁGI ELLENŐRZŐ
         if (path === '/api/auth/check' && method === 'GET') {
             if (!user) return res.status(401).json({ valid: false, deleted: true });
             const { data: t } = await supabase.from('tagok').select('*').eq('id', user.id).single();
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
             return res.json({ valid: true });
         }
 
-        // LEADANDÓ
+        //LEADANDÓ
         if (path === '/api/leadando') {
             if (method === 'GET') {
                 const { data: tagok } = await supabase.from('tagok').select('id, nev, ic_nev, rang, heti_leadva');
@@ -120,7 +120,7 @@ export default async function handler(req, res) {
             }
         }
 
-        // WARN
+        //WARN
         if (path === '/api/warn') {
             if (method === 'GET') { const { data } = await supabase.from('figyelmeztetesek').select('*').order('datum', { ascending: false }); return res.json(data || []); }
             if (method === 'POST') {
@@ -136,7 +136,7 @@ export default async function handler(req, res) {
             if (method === 'DELETE') { await supabase.from('figyelmeztetesek').delete().eq('id', id); return res.json({ success: true }); }
         }
 
-        // AKCIÓK
+        //AKCIÓK
         if (path === '/api/akcio') {
             if (method === 'GET') { const { data } = await supabase.from('akciok').select('*').order('datum', { ascending: false }); return res.json(data || []); }
             if (method === 'POST') {
@@ -145,7 +145,7 @@ export default async function handler(req, res) {
                 const { data: t } = await supabase.from('tagok').select('akcio_szervezett').eq('id', user.id).single(); 
                 await supabase.from('tagok').update({ akcio_szervezett: (t.akcio_szervezett || 0) + 1 }).eq('id', user.id); 
 
-                const DISCORD_WEBHOOK_URL = 'TE_DISCORD_WEBHOOK_LINKED_IDE_JON'; 
+                const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491388738927067187/zAcIXgjXZdt3bknRRLp4rMnj0paoGYDpu-WsYHg7YJtDeVSq4XS4wzO3CMoRVgXaqhti'; 
                 try {
                     let desc = `**Szervező:** ${user.ic_nev || user.nev}`;
                     if(tervezett) desc += `\n**Tervezett időpont:** ${new Date(tervezett).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' })}\n\nWeben tudtok jelentkezni!`;
@@ -186,7 +186,7 @@ export default async function handler(req, res) {
             await supabase.from('tagok').update({ akcio_szervezett: 0, akcio_resztvett: 0 }).gt('id', 0); return res.json({ success: true }); 
         }
 
-        // KASSZA
+        //KASSZA
         if (path === '/api/kassza') {
             if (method === 'GET') { 
                 const { data: a } = await supabase.from('kassza_log').select('osszeg, tipus'); const { data: l } = await supabase.from('kassza_log').select('*').order('datum', { ascending: false }).limit(30); 
@@ -195,7 +195,7 @@ export default async function handler(req, res) {
             if (method === 'POST') { await supabase.from('kassza_log').insert([{ tipus: req.body.tipus, osszeg: parseInt(req.body.osszeg), operator: req.body.operator, bizonyitek: req.body.bizonyitek }]); return res.json({ success: true }); }
         }
 
-        // TAGOK ÉS JOGOK
+        //TAGOK ÉS JOGOK
         if (path === '/api/tagok' && method === 'GET') { const { data: t } = await supabase.from('tagok').select('*'); const { data: r } = await supabase.from('jogosultsagok').select('*'); return res.json(t.map(x => ({ ...x, prioritas: r.find(y => y.rang === x.rang)?.prioritas || 999 })).sort((a, b) => a.prioritas - b.prioritas)); }
         if (path === '/api/tagok' && method === 'POST') { const hp = await bcrypt.hash('123456', SALT_ROUNDS); const { error } = await supabase.from('tagok').insert([{ ...req.body, jelszo: hp, elso_belepes: true }]); if(error) return res.status(400).json({error:'Név már létezik!'}); return res.json({ success: true }); }
         if (path.startsWith('/api/tagok/')) { const id = path.split('/').pop(); if (method === 'PUT') { await supabase.from('tagok').update(req.body).eq('id', id); return res.json({ success: true }); } if (method === 'DELETE') { await supabase.from('tagok').delete().eq('id', id); return res.json({ success: true }); } }
@@ -204,17 +204,37 @@ export default async function handler(req, res) {
         if (path === '/api/jogosultsagok' && method === 'POST') { await supabase.from('jogosultsagok').insert([req.body]); return res.json({ success: true }); }
         if (path.startsWith('/api/jogosultsagok/')) { const r = decodeURIComponent(path.split('/').pop()); if (method === 'PUT') { await supabase.from('jogosultsagok').update(req.body).eq('rang', r); return res.json({ success: true }); } if (method === 'DELETE') { await supabase.from('jogosultsagok').delete().eq('rang', r); return res.json({ success: true }); } }
 
-        // PROFIL
+        //PROFIL & STATISZTIKA
         if (path.startsWith('/api/profil/')) { 
             const id = parseInt(path.split('/').pop()); 
             if (method === 'GET') { 
                 const { data: p } = await supabase.from('tagok').select('*').eq('id', id).single(); 
                 const { data: w } = await supabase.from('figyelmeztetesek').select('*').eq('tag_id', id).order('datum', { ascending: false }); 
-                p.warnings = w.map(x => ({ ...x, aktiv_allapot: x.aktiv && (!x.lejaret || new Date(x.lejaret) > new Date()), indok: (user.jog_warn || user.id === id || user.rang === 'DEV') ? x.indok : '*** Rejtett ***' })); return res.json(p); 
+                
+                // 14 napos statisztika kiszámolása
+                const tizennegyNapja = new Date();
+                tizennegyNapja.setDate(tizennegyNapja.getDate() - 14);
+                const { data: recentAkciok } = await supabase.from('akciok').select('szervezo_id, resztvevok').gte('datum', tizennegyNapja.toISOString());
+                
+                let heti2Szervezett = 0;
+                let heti2Resztvett = 0;
+                
+                if (recentAkciok) {
+                    recentAkciok.forEach(akcio => {
+                        if (akcio.szervezo_id === id) heti2Szervezett++;
+                        if (akcio.resztvevok && akcio.resztvevok.some(r => r.id === id)) heti2Resztvett++;
+                    });
+                }
+                
+                p.heti2_szervezett = heti2Szervezett;
+                p.heti2_resztvett = heti2Resztvett;
+                
+                p.warnings = w.map(x => ({ ...x, aktiv_allapot: x.aktiv && (!x.lejaret || new Date(x.lejaret) > new Date()), indok: (user.jog_warn || user.id === id || user.rang === 'DEV') ? x.indok : '*** Rejtett ***' })); 
+                return res.json(p); 
             } else { await supabase.from('tagok').update(req.body).eq('id', id); return res.json({ success: true }); } 
         }
 
-        // HÍREK ÉS JELSZÓ
+        //HÍREK ÉS JELSZÓ
         if (path === '/api/hirek') { if (method === 'GET') { const { data } = await supabase.from('hirek').select('*').order('datum', { ascending: false }); return res.json(data); } else { await supabase.from('hirek').insert([{ ...req.body, iro: user.nev }]); return res.json({ success: true }); } }
         if (path.startsWith('/api/hirek/') && method === 'DELETE') { await supabase.from('hirek').delete().eq('id', path.split('/').pop()); return res.json({ success: true }); }
         if (path === '/api/jelszocsere' && method === 'POST') { const hp = await bcrypt.hash(req.body.ujJelszo, SALT_ROUNDS); await supabase.from('tagok').update({ jelszo: hp, elso_belepes: false }).eq('id', req.body.userId); return res.json({ success: true }); }
