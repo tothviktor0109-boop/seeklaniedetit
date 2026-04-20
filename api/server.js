@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-const JWT_SECRET = process.env.JWT_SECRET || 'titkos-kulcs-123';
+const JWT_SECRET = process.env.JWT_SECRET || 'titkos-kulcs-v2-123';
 const SALT_ROUNDS = 10;
 
 async function checkAndProcessZaras() {
