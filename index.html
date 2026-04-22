@@ -749,8 +749,683 @@
     </div>
 
 <script>
-    let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [], ALL_TAGOK = [], ALL_AKCIOK = []; async function apiFetch(url, options = {}) { const t = localStorage.getItem('klani_token'); const h = { 'Content-Type': 'application/json' }; if (t) h['Authorization'] = `Bearer ${t}`; options.headers = h; const r = await fetch(url, options); if (!r.ok) { const d = await r.json(); alert(d.error); return null } return r } async function checkA() { const t = localStorage.getItem('klani_token'); if (!t) return; try { const r = await fetch('/api/auth/check', { headers: { 'Authorization': `Bearer ${t}` } }); if (!r.ok) { kijelentkezes(); return } const d = await r.json(); if (d.deleted) { alert("A profilod törlésre került!"); kijelentkezes() } else if (d.newToken) { localStorage.setItem('klani_token', d.newToken); location.reload() } } catch (e) { } } async function bejelentkezes() { const n = document.getElementById('login-user').value, j = document.getElementById('login-pass').value; const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nev: n, jelszo: j }) }); const d = await r.json(); if (d.success) { if (d.elso_belepes) { window.tempId = d.user.id; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; tab('password-screen', null) } else { localStorage.setItem('klani_token', d.token); location.reload() } } else document.getElementById('login-hiba').innerText = d.error } function tab(i, b) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById(i).classList.add('active'); if (b) { document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active-nav')); b.classList.add('active-nav') } if (i === 'profil-section') fetchProfil(); if (i === 'akcio-section') fetchAkciok(); if (i === 'warn-section') fetchWarnList(); if (i === 'leadando-section') fetchLeadando() } window.onload = async () => { const t = localStorage.getItem('klani_token'); if (t) { const d = JSON.parse(atob(t.split('.')[1])); myUserId = d.id; myUserName = d.ic_nev || d.nev; myUserRang = d.rang; myPermissions = d; document.getElementById('logged-in-user').innerText = 'Felhasználó: ' + myUserName; document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang; document.getElementById('login-screen').style.display = 'none'; document.getElementById('main-app').style.display = 'block'; checkA(); const rJ = await apiFetch('/api/jogosultsagok'); ALL_RANGS = await rJ.json(); if (myPermissions.jog_admin) { const nj = document.getElementById('nav-jogok'); if (nj) nj.style.display = 'block'; fetchJogok() } if (myPermissions.jog_akcio) { const uab = document.getElementById('uj-akcio-box'); if (uab) uab.style.display = 'block' } if (myPermissions.jog_akcio_tervezes || myUserRang === 'DEV') { const tbb = document.getElementById('tervezes-box'); if(tbb) tbb.style.display = 'block'; } if (myUserRang === 'DEV') { const szb = document.getElementById('szezon-zaras-btn'); if (szb) szb.style.display = 'block' } if (myPermissions.jog_warn) { const nw = document.getElementById('nav-warn'); if (nw) nw.style.display = 'block' } if (myPermissions.tag_kezel || myPermissions.jog_admin) { const lab = document.getElementById('leadando-admin-box'); if (lab) lab.style.display = 'block' } const uhd = document.getElementById('uj-hir-doboz'); if (uhd) uhd.style.display = myPermissions.hir_iras ? 'block' : 'none'; const kc = document.getElementById('kassza-controls'); if (kc) kc.style.display = myPermissions.kassza ? 'flex' : 'none'; const tfb = document.getElementById('tag-felvetel-box'); if (tfb) tfb.style.display = myPermissions.tag_kezel ? 'block' : 'none'; fetchHirek(); fetchBalance(); fetchTagok(); fetchProfil(); fetchAkciok(); fetchLeadando() } }; async function fetchLeadando() { try { const r = await apiFetch('/api/leadando'); if (!r) return; const d = await r.json(); if (!d || !d.tagok) return; const m = d.tagok.find(x => x.id === myUserId), nBtn = document.getElementById('nav-leadando'), kij = document.getElementById('leadando-sajat-display'), gDob = document.getElementById('leadando-befizetes-box'); if (m && kij) { const b = m.heti_leadva || 0, k = m.kotelezo || 0; if (k === 0) { kij.innerHTML = `<span style="color:var(--text-muted)">Nincsen kötelező leadandód!</span>`; if (nBtn) nBtn.classList.remove('nav-btn-warn'); if (gDob) gDob.style.display = 'none' } else { if (gDob) gDob.style.display = 'flex'; if (b >= k) { kij.innerHTML = `<span style="color:var(--success)">Teljesítve: ${b.toLocaleString()} $ / ${k.toLocaleString()} $</span>`; if (nBtn) nBtn.classList.remove('nav-btn-warn') } else { kij.innerHTML = `<span style="color:var(--danger)">Hiányzik: ${b.toLocaleString()} $ / ${k.toLocaleString()} $</span>`; if (nBtn) nBtn.classList.add('nav-btn-warn') } } } const aL = document.getElementById('leadando-admin-lista'); if (aL && (myPermissions.tag_kezel || myPermissions.jog_admin || myUserRang === 'DEV')) { aL.innerHTML = ''; d.tagok.filter(x => x.rang !== 'DEV').forEach(x => { const b = x.heti_leadva || 0, k = x.kotelezo || 0; if (k === 0) return; const ksz = b >= k; aL.innerHTML += `<tr><td><strong style="color:var(--accent)">${x.ic_nev || x.nev}</strong></td><td>${x.rang}</td><td style="color:${ksz ? 'var(--success)' : 'var(--danger)'}">${b.toLocaleString()} $</td><td style="color:var(--text-muted)">${k.toLocaleString()} $</td><td>${ksz ? '<span style="color:var(--success); font-weight:bold;">✔️</span>' : '<span style="color:var(--danger); font-weight:bold;">❌</span>'}</td></tr>` }) } } catch (e) { const k = document.getElementById('leadando-sajat-display'); if (k) k.innerHTML = "<span style='color:red'>Hiba a betöltéskor!</span>" } } async function inditLeadando() { const oI = document.getElementById('leadando-osszeg'), lI = document.getElementById('leadando-link'), o = oI ? oI.value.replace(/\s/g, "") : 0, l = lI ? lI.value : ''; if (!o || isNaN(o) || parseInt(o) <= 0) return alert("Érvénytelen összeg!"); if (lI && (!l || !l.startsWith('http'))) return alert("Érvénytelen link!"); if (confirm(`Megerősíted ${parseInt(o).toLocaleString()}$ befizetését?`)) { await apiFetch('/api/leadando', { method: 'POST', body: JSON.stringify({ osszeg: o, bizonyitek: l || 'Nincs link' }) }); alert("Sikeres rögzítés!"); if (oI) oI.value = ''; if (lI) lI.value = ''; fetchLeadando(); fetchBalance() } } async function fetchWarnList() { if (!myPermissions.jog_warn) return; const r = await apiFetch('/api/warn'), w = await r.json(), tb = document.getElementById('warn-lista'); if (!tb) return; tb.innerHTML = ''; w.forEach(x => { const iE = x.lejaret && new Date(x.lejaret) < new Date(), iA = x.aktiv && !iE; let b = iA ? '<span class="badge badge-active">AKTÍV</span>' : '<span class="badge badge-expired">LEJÁRT/VISSZAVONT</span>', m = iA ? `<button class="btn btn-warn" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="vonWarn(${x.id})">Visszavonás</button>` : ''; m += ` <button class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.7rem; border:none;" onclick="torolWarn(${x.id})">🗑️</button>`; const tT = ALL_TAGOK.find(y => y.id === x.tag_id), tN = tT ? (tT.ic_nev || tT.nev) : 'Törölt Tag'; let lS = x.lejaret ? new Date(x.lejaret).toLocaleDateString() : 'Végleges'; tb.innerHTML += `<tr><td style="color:var(--text-muted)">${new Date(x.datum).toLocaleDateString()}</td><td><strong style="color:var(--text)">${tN}</strong></td><td>${x.szervezo_nev}</td><td>${lS}</td><td>${b}</td><td>${m}</td></tr><tr><td colspan="6" style="padding-top:0; border-top:none; color:var(--text-muted); font-size:0.8rem;">Indok: <em>${x.indok}</em></td></tr>` }) } async function kiosztWarn() { const t = document.getElementById('warn-tag-select').value, n = document.getElementById('warn-napok').value, i = document.getElementById('warn-indok').value; if (!t || !i) return alert("Minden mező kötelező!"); await apiFetch('/api/warn', { method: 'POST', body: JSON.stringify({ tag_id: t, indok: i, napok: n }) }); alert("Figyelmeztetés kiosztva!"); document.getElementById('warn-indok').value = ''; fetchWarnList() } async function vonWarn(id) { if (confirm("Visszavonod?")) { await apiFetch(`/api/warn/${id}`, { method: 'PUT', body: JSON.stringify({ aktiv: false }) }); fetchWarnList() } } async function torolWarn(id) { if (confirm("Törlöd?")) { await apiFetch(`/api/warn/${id}`, { method: 'DELETE' }); fetchWarnList() } } function renderWarnokProfilon(cId, w) { const c = document.getElementById(cId); if (!c) return; if (!w || w.length === 0) { c.innerHTML = ''; return } let h = '<h3 style="color:var(--warn); margin-bottom:10px; font-size:1rem;">Figyelmeztetések</h3><div style="display:flex; flex-direction:column; gap:10px;">'; w.forEach(x => { let b = x.aktiv_allapot ? '<span class="badge badge-active">AKTÍV</span>' : '<span class="badge badge-expired">LEJÁRT</span>', lS = x.lejaret ? new Date(x.lejaret).toLocaleDateString() : 'Végleges'; h += `<div style="background:rgba(251, 191, 36, 0.05); border:1px solid rgba(251, 191, 36, 0.2); padding:10px; border-radius:8px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">${b} <small style="color:var(--text-muted)">Lejárat: ${lS}</small></div><div style="color:var(--text); font-size:0.9rem;"><strong>Indok:</strong> ${x.indok}</div><div style="color:var(--text-muted); font-size:0.7rem; margin-top:5px; text-align:right;">Osztotta: ${x.szervezo_nev} - ${new Date(x.datum).toLocaleDateString()}</div></div>` }); c.innerHTML = h + '</div>' } async function megtekintProfil(id) { const a = ALL_TAGOK.find(x => x.id === id); if (a) { document.getElementById('modal-ic').innerText = a.ic_nev || '-'; document.getElementById('modal-user').innerText = 'User: ' + a.nev; document.getElementById('modal-rang').innerText = a.rang; document.getElementById('modal-discord').innerText = a.discord || '-' } document.getElementById('modal-szervezett').innerText = '...'; document.getElementById('modal-resztvett').innerText = '...'; document.getElementById('modal-14-szervezett').innerText = '...'; document.getElementById('modal-14-resztvett').innerText = '...'; document.getElementById('modal-leiras').innerText = 'Betöltés...'; document.getElementById('modal-warns').innerHTML = ''; document.getElementById('profil-modal').style.display = 'flex'; const r = await apiFetch(`/api/profil/${id}`); if (!r) return; const p = await r.json(); document.getElementById('modal-szervezett').innerText = p.akcio_szervezett || 0; document.getElementById('modal-resztvett').innerText = p.akcio_resztvett || 0; document.getElementById('modal-14-szervezett').innerText = p.heti2_szervezett || 0; document.getElementById('modal-14-resztvett').innerText = p.heti2_resztvett || 0; document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-'; renderWarnokProfilon('modal-warns', p.warnings) } async function fetchProfil() { const r = await apiFetch(`/api/profil/${myUserId}`), p = await r.json(); let h = `<div class="card"><h2 style="color:var(--accent); margin-top:0;">Saját Profil</h2><div style="display:flex; align-items:center; gap:25px; flex-wrap:wrap; margin: 25px 0; padding:15px 20px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; font-size:1.1rem;"><div><strong style="color:var(--text-muted);">IC Név:</strong> <span style="color:var(--text);">${p.ic_nev || '-'}</span></div><div><strong style="color:var(--text-muted);">User:</strong> <span style="color:var(--accent); font-weight:bold;">${p.nev}</span></div><div><strong style="color:var(--text-muted);">Rang:</strong> <span style="color:white; border:1px solid var(--border); padding:0.2rem 0.8rem; border-radius:50px; background:rgba(255,255,255,0.05); font-size:0.9rem; margin-left:5px;">${p.rang}</span></div><div><strong style="color:var(--text-muted);">Discord ID:</strong> <span style="color:var(--text);">${p.discord || '-'}</span></div></div><div style="display:flex; gap:10px; margin-top:20px; padding:20px; background:rgba(0, 210, 255, 0.05); border-radius:8px; color:var(--accent); border:1px solid rgba(0,210,255,0.1); flex-wrap:wrap;"><div style="flex:1; min-width:120px;"><strong>Összes Szervezett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>Összes Résztvett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_resztvett || 0}</span></div><div style="flex:1; min-width:120px; border-left:1px solid rgba(0,210,255,0.2); padding-left:10px;"><strong>14 Napos Szervezett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>14 Napos Résztvett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_resztvett || 0}</span></div></div><div id="sajat-warns" style="margin-top:20px; margin-bottom:20px;"></div><p style="color:var(--text-muted); margin:0 0 10px 0;">Bemutatkozás / Jegyzet:</p><textarea id="input-bemutatkozas" rows="6" placeholder="Írj magadról vagy jegyzetelj...">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%; border-color:var(--accent); color:white; background:rgba(0,210,255,0.1); margin-bottom: 25px; letter-spacing:2px;" onclick="mentesProfil()">Mentés</button><div style="padding:20px; background:rgba(255, 45, 85, 0.03); border: 1px solid rgba(255, 45, 85, 0.2); border-radius:8px; margin-top:10px;"><h3 style="color:var(--danger); margin-top:0; font-size:1.3rem; text-shadow:0 0 10px var(--danger);">Jelszó Módosítása</h3><input type="password" id="profil-uj-jelszo" placeholder="Új jelszó..."><button class="btn btn-danger" style="width:100%; letter-spacing:2px;" onclick="profilJelszocsere()">Mentés</button></div></div>`; const ps = document.getElementById('profil-section'); if (ps) { ps.innerHTML = h; renderWarnokProfilon('sajat-warns', p.warnings) } } async function mentesProfil() { await apiFetch(`/api/profil/${myUserId}`, { method: 'PUT', body: JSON.stringify({ bemutatkozas: document.getElementById('input-bemutatkozas').value }) }); alert("Mentve!") } async function profilJelszocsere() { const u = document.getElementById('profil-uj-jelszo').value; if (!u || u.length < 3) return alert("Érvénytelen jelszó!"); await apiFetch('/api/jelszocsere', { method: 'POST', body: JSON.stringify({ userId: myUserId, ujJelszo: u }) }); alert("Következő belépésnél az új jelszót használd!"); document.getElementById('profil-uj-jelszo').value = '' } async function fetchAkciok() { const r = await apiFetch('/api/akcio'); ALL_AKCIOK = await r.json(); renderAkciok(ALL_AKCIOK, false) } function renderAkciok(l, iS = false) { const c = document.getElementById('akciok-lista'); if (!c) return; c.innerHTML = ''; const aA = l.filter(x => x.aktiv && !x.archivalva), lA = l.filter(x => !x.aktiv && !x.archivalva), arA = l.filter(x => x.archivalva), aG = document.getElementById('nav-akcio'); if (aG) { if (aA.length > 0) aG.classList.add('nav-btn-alert'); else aG.classList.remove('nav-btn-alert') } let h = `<h3 style="color:var(--success); border-bottom:1px solid var(--border); padding-bottom:10px;">Aktív Akciók</h3>`; if (aA.length === 0) h += `<p style="color:var(--text-muted); text-align:center; padding:20px; background:rgba(0,0,0,0.2); border-radius:8px;">${iS ? 'Nincs találat.' : 'Nincs akció.'}</p>`; else aA.forEach(x => h += generalAkcioCard(x)); if (myPermissions.jog_lezart_akcio || myUserRang === 'DEV') { h += `<h3 style="color:var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px; margin-top:30px;">Lezárt Akciók</h3>`; if (lA.length === 0) h += `<p style="color:var(--text-muted)">${iS ? 'Nincs találat.' : 'Nincs lezárt.'}</p>`; else lA.forEach(x => h += generalAkcioCard(x)); if (iS) { h += `<h3 style="color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px; margin-top:30px;">Archivált Akciók (Keresés)</h3>`; if (arA.length === 0) h += `<p style="color:var(--text-muted)">Nincs találat.</p>`; else arA.forEach(x => h += generalAkcioCard(x)) } else { h += `<div style="margin-top:40px; border-top: 1px dashed var(--border); padding-top:20px;"><button class="btn" style="width:100%; border-color:var(--text-muted); color:var(--text-muted);" onclick="toggleArchivum()">ARCHIVÁLT AKCIÓK</button></div><div id="archivum-container" style="display:none; margin-top:20px;"><h3 style="color:var(--text-muted)">Archivált Akciók</h3>`; if (arA.length === 0) h += `<p style="color:var(--text-muted)">Üres archívum.</p>`; else arA.forEach(x => h += generalAkcioCard(x)); h += `</div>` } } c.innerHTML = h } function generalAkcioCard(a) { let rH = a.resztvevok.map(x => `<li style="color:var(--text-muted);"><strong style="color:var(--text);">${x.ic_nev || x.nev}</strong> - <small>${new Date(x.ido).toLocaleTimeString()}</small></li>`).join(''); let g = ''; if (a.aktiv && !a.archivalva) { const b = a.resztvevok.find(x => x.id === myUserId); if (a.szervezo_id === myUserId) g += `<span style="color:var(--accent); font-weight:bold; margin-right:10px;">Te vagy a szervező</span>`; else if (!b) g += `<button class="btn" style="padding:0.4rem 0.8rem; font-size:0.7rem; border-color:var(--accent); color:var(--accent);" onclick="csatlakozikAkcio(${a.id})">Jelentkezés</button>`; else g += `<button class="btn btn-warn" style="padding:0.4rem 0.8rem; font-size:0.7rem; margin-right:10px;" onclick="kilepAkcio(${a.id})">Kijelentkezés</button>`; if (myPermissions.jog_akcio || myUserRang === 'DEV') g += ` <button class="btn btn-danger" style="padding:0.4rem 0.8rem; font-size:0.7rem;" onclick="zarAkcio(${a.id})">ZÁRÁS</button>` } else if (a.archivalva) { g = `<span style="color:var(--text-muted); font-weight:bold;">[ ARCHIVÁLVA ]</span>` } else { g = `<span style="color:var(--danger); font-weight:bold;">[ LEZÁRT ]</span>` } let iSz = `<small>${new Date(a.datum).toLocaleString()}</small>`; let sJ = ''; if (a.tervezett_ido) { const tI = new Date(a.tervezett_ido); iSz = `<small style="color:var(--warn); font-weight:bold;">Tervezett időpont: ${tI.toLocaleString()}</small>`; if (tI > new Date() && a.aktiv) { sJ = ` <span class="badge" style="background:rgba(251, 191, 36, 0.1); color:var(--warn); border:1px solid var(--warn);">TERVEZETT</span>` } } return `<div class="card" style="border: 1px solid ${a.aktiv ? 'var(--border)' : 'transparent'}; background: ${a.aktiv ? 'var(--surface)' : 'rgba(0,0,0,0.2)'}; margin-bottom: 15px; padding: 1.5rem;"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;"><h3 style="margin:0; color:${a.aktiv ? 'var(--accent)' : 'var(--text-muted)'}">[ ${a.tipus} ] - Szervező: ${a.szervezo_nev}${sJ}</h3><div>${g}</div></div><p style="color:var(--text-muted); margin-bottom:5px;">${iSz}</p><div style="margin-top:15px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;"><strong style="color:var(--text);">Résztvevők (${a.resztvevok.length} fő):</strong><ul style="margin-top:10px; padding-left:20px; line-height:1.8;">${rH || '<li>Még senki nem csatlakozott.</li>'}</ul></div></div>` } function szuresAkciok(v) { const vl = v.toLowerCase(); if (!vl) { renderAkciok(ALL_AKCIOK, false); return } renderAkciok(ALL_AKCIOK.filter(x => (x.szervezo_nev || '').toLowerCase().includes(vl) || x.resztvevok.some(y => (y.nev || '').toLowerCase().includes(vl) || (y.ic_nev || '').toLowerCase().includes(vl))), true) } function toggleArchivum() { const a = document.getElementById('archivum-container'); if (a) a.style.display = a.style.display === 'none' ? 'block' : 'none' } async function letrehozAkcio() { const tI = document.getElementById('uj-akcio-ido'); let tV = null; if (tI && tI.value) { tV = new Date(tI.value).toISOString() } await apiFetch('/api/akcio', { method: 'POST', body: JSON.stringify({ tipus: document.getElementById('uj-akcio-tipus').value, tervezett_ido: tV }) }); fetchAkciok(); if(tI) tI.value='' } async function csatlakozikAkcio(id) { await apiFetch(`/api/akcio/${id}/join`, { method: 'PUT' }); fetchAkciok(); fetchProfil() } async function kilepAkcio(id) { if (confirm("Biztosan kijelentkezel ebből a műveletből?")) { await apiFetch(`/api/akcio/${id}/leave`, { method: 'PUT' }); fetchAkciok(); fetchProfil() } } async function zarAkcio(id) { if (confirm("Lezárod?")) { await apiFetch(`/api/akcio/${id}/close`, { method: 'PUT' }); fetchAkciok() } } async function szezonzaras() { if (confirm("Ezzel minden statisztika nullázódik. Folytatod?")) { await apiFetch('/api/akcio_archiv', { method: 'POST' }); alert("Szezon lezárva!"); fetchAkciok(); fetchProfil() } } async function fetchTagok() { const r = await apiFetch('/api/tagok'); ALL_TAGOK = await r.json(); const s = document.getElementById('uj-tag-rang-select'), sw = document.getElementById('warn-tag-select'); if (s) { s.innerHTML = ''; ALL_RANGS.forEach(x => { if (x.rang === 'DEV' && myUserRang !== 'DEV') return; s.innerHTML += `<option value="${x.rang}">${x.rang}</option>` }) } if (sw) { sw.innerHTML = ''; ALL_TAGOK.forEach(x => { if (x.rang !== 'DEV') sw.innerHTML += `<option value="${x.id}">${x.ic_nev || x.nev}</option>` }) } renderTagok(ALL_TAGOK) } function renderTagok(l) { const tb = document.getElementById('tagok-lista'); if (!tb) return; tb.innerHTML = ''; l.forEach(x => { if (x.rang === 'DEV') return; let m = `<button class="btn" style="padding:0.3rem 0.8rem; font-size:0.7rem; border-color:var(--accent); color:var(--accent);" onclick="megtekintProfil(${x.id})">PROFIL</button>`; if (myPermissions.nev_valtoztat) { m += ` <button class="btn" style="padding:0.3rem 0.8rem; font-size:0.7rem; border-color:var(--success); color:var(--success);" onclick="nyitTagSzerkesztes(${x.id},'${x.nev}','${x.ic_nev}','${x.discord}','${x.rang}')">Szerk</button> <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.8rem; border:none;" onclick="tagTorles(${x.id})">🗑️</button>` } tb.innerHTML += `<tr><td><strong style="color:var(--accent)">${x.ic_nev || '-'}</strong><br><small style="color:var(--text-muted);">${x.nev}</small></td><td style="color:var(--text-muted);">${x.rang}</td><td>${m}</td></tr>` }) } function szuresTagok(v) { const vl = v.toLowerCase(); renderTagok(ALL_TAGOK.filter(x => (x.ic_nev || '').toLowerCase().includes(vl) || x.nev.toLowerCase().includes(vl) || (x.discord || '').toLowerCase().includes(vl))) } function nyitTagSzerkesztes(i, n, ic, d, r) { editTargetId = i; document.getElementById('edit-tag-user').value = n; document.getElementById('edit-tag-ic').value = ic; document.getElementById('edit-tag-discord').value = d; const s = document.getElementById('edit-tag-rang'); s.innerHTML = ''; ALL_RANGS.forEach(x => { if (x.rang === 'DEV' && myUserRang !== 'DEV') return; s.innerHTML += `<option value="${x.rang}" ${x.rang === r ? 'selected' : ''}>${x.rang}</option>` }); document.getElementById('edit-tag-modal').style.display = 'flex' } async function veglegesitTagSzerkesztes() { const u = { ic_nev: document.getElementById('edit-tag-ic').value, discord: document.getElementById('edit-tag-discord').value, rang: document.getElementById('edit-tag-rang').value }; if (myPermissions.prio <= 2) u.nev = document.getElementById('edit-tag-user').value; await apiFetch(`/api/tagok/${editTargetId}`, { method: 'PUT', body: JSON.stringify(u) }); document.getElementById('edit-tag-modal').style.display = 'none'; fetchTagok() } async function tagTorles(id) { if (confirm("Törlöd?")) { await apiFetch(`/api/tagok/${id}`, { method: 'DELETE' }); fetchTagok() } } async function fetchJogok() { const r = await apiFetch('/api/jogosultsagok'), j = await r.json(), tb = document.getElementById('jogok-lista'); if (!tb) return; tb.innerHTML = ''; j.forEach(x => { let rC = x.rang === 'DEV' ? `<td>DEV (${x.prioritas})</td><td colspan="11" style="text-align:center; color:var(--text-muted); font-weight:600; letter-spacing:2px;">[ ÉRÍNTHETETLEN ]</td><td>-</td>` : `<td style="white-space: nowrap;"><input type="text" class="edit-rang-nev" data-old-rang="${x.rang}" value="${x.rang}" style="width:90px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--text); border-radius:4px; text-align:center;"> (<input type="number" class="edit-rang-prio" value="${x.prioritas}" style="width:40px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--text); border-radius:4px; text-align:center;">)</td><td><input type="number" class="edit-rang-leadando" value="${x.leadando || 0}" style="width:80px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--warn); border-radius:4px; text-align:center; font-weight:bold;"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.hir_iras ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'hir_iras', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.hir_kezel ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'hir_kezel', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.kassza ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'kassza', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.tag_kezel ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'tag_kezel', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_admin ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_admin', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.nev_valtoztat ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'nev_valtoztat', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_akcio ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_akcio', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_akcio_tervezes ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_akcio_tervezes', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_lezart_akcio ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_lezart_akcio', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_warn ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_warn', this.checked)"></td><td><button onclick="torolRang('${x.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button></td>`; tb.innerHTML += `<tr>${rC}</tr>` }) } async function mentesOsszesRangText() { const n = document.querySelectorAll('.edit-rang-nev'), p = document.querySelectorAll('.edit-rang-prio'), l = document.querySelectorAll('.edit-rang-leadando'), pr = []; for (let i = 0; i < n.length; i++) { pr.push(apiFetch(`/api/jogosultsagok/${encodeURIComponent(n[i].getAttribute('data-old-rang'))}`, { method: 'PUT', body: JSON.stringify({ rang: n[i].value, prioritas: parseInt(p[i].value), leadando: parseInt(l[i].value) }) })) } await Promise.all(pr); alert("Mentve!"); fetchJogok(); fetchTagok(); fetchLeadando() } async function mentesRang(r, m, e) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'PUT', body: JSON.stringify({ [m]: e }) }) } async function letrehozRang() { await apiFetch('/api/jogosultsagok', { method: 'POST', body: JSON.stringify({ rang: document.getElementById('uj-rang-nev').value, prioritas: parseInt(document.getElementById('uj-rang-prio').value) }) }); fetchJogok() } async function torolRang(r) { if (confirm("Törlöd?")) { await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'DELETE' }); fetchJogok() } } function formatNumber(i) { i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ") } function inditTranzakcio(t) { const o = document.getElementById('osszeg').value.replace(/\s/g, ""); if (!o || isNaN(o)) return alert("Érvénytelen!"); aktualisTranzakcio = { tipus: t, osszeg: parseInt(o) }; document.getElementById('modal-osszeg-display').innerText = (t === 'be' ? 'Befizetés: ' : 'Kivétel: ') + parseInt(o).toLocaleString() + " $"; document.getElementById('modal-osszeg-display').style.color = t === 'be' ? 'var(--success)' : 'var(--danger)'; document.getElementById('kassza-modal').style.display = 'flex' } function valtsIgazolasTipus(v) { document.getElementById('igazolas-input-container').innerHTML = v === 'link' ? '<input type="text" id="kassza-bizonyitek" placeholder="https://...">' : '<textarea id="kassza-bizonyitek" placeholder="Megjegyzés..."></textarea>' } async function veglegesitTranzakcio() { const b = document.getElementById('kassza-bizonyitek').value; if (!b) return alert("Add meg!"); await apiFetch('/api/kassza', { method: 'POST', body: JSON.stringify({ tipus: aktualisTranzakcio.tipus, osszeg: aktualisTranzakcio.osszeg, bizonyitek: b, operator: myUserName }) }); location.reload() } function zárKasszaModal() { document.getElementById('kassza-modal').style.display = 'none' } async function fetchBalance() { const r = await apiFetch('/api/kassza'), d = await r.json(); document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $'; const tb = document.getElementById('kassza-log-lista'); if (!tb) return; tb.innerHTML = ''; d.logs.forEach(x => { tb.innerHTML += `<tr><td style="color:var(--text-muted);">${new Date(x.datum).toLocaleDateString()}</td><td>${x.operator}</td><td style="color:${x.tipus === 'be' ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${x.tipus.toUpperCase()}</td><td>${x.osszeg.toLocaleString()} $</td><td>${x.bizonyitek?.startsWith('http') ? `<a href="${x.bizonyitek}" target="_blank" style="color:var(--accent)">LINK</a>` : (x.bizonyitek || '-')}</td></tr>` }) } async function fetchHirek() { const l = document.getElementById('hirek-lista'); if (!l) return; l.innerHTML = '<div style="text-align:center; padding: 2rem; color:var(--text-muted);">Betöltés...</div>'; const r = await apiFetch('/api/hirek'); if (!r) { l.innerHTML = '<div style="text-align:center; color:var(--danger);">Hiba!</div>'; return } const h = await r.json(); l.innerHTML = ''; if (h.length === 0) { l.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);">Üres.</div>' } else { h.forEach(x => { let d = myPermissions.hir_kezel ? `<button class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.8rem; border:none;" onclick="torolHir(${x.id})">🗑️</button>` : '', fS = x.tartalom ? x.tartalom.replace(/\n/g, '<br>') : ''; l.innerHTML += `<div class="card" style="padding:1.5rem;"><div style="display:flex; justify-content:space-between"><strong style="color:var(--accent); font-size:1.2rem;">${x.cim}</strong>${d}</div><small style="color:var(--text-muted); display:block; margin-top:5px;">${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p style="margin-top:15px; color:var(--text); line-height:1.6;">${fS}</p></div>` }) } } async function ujTagMentese() { const n = document.getElementById('uj-tag-user').value, ic = document.getElementById('uj-tag-ic').value, d = document.getElementById('uj-tag-discord').value, r = document.getElementById('uj-tag-rang-select').value; if (!n) return alert("Kötelező!"); const rS = await apiFetch('/api/tagok', { method: 'POST', body: JSON.stringify({ nev: n, ic_nev: ic, discord: d, rang: r }) }); if (rS) { alert("Sikeres!"); document.getElementById('uj-tag-user').value = ''; document.getElementById('uj-tag-ic').value = ''; document.getElementById('uj-tag-discord').value = ''; fetchTagok() } } async function posztolHir() { await apiFetch('/api/hirek', { method: 'POST', body: JSON.stringify({ cim: document.getElementById('hir-cim').value, tartalom: document.getElementById('hir-tartalom').value }) }); location.reload() } async function torolHir(id) { if (confirm("Törlöd?")) { await apiFetch(`/api/hirek/${id}`, { method: 'DELETE' }); fetchHirek() } } async function jelszocsere() { await apiFetch('/api/jelszocsere', { method: 'POST', body: JSON.stringify({ userId: window.tempId, ujJelszo: document.getElementById('new-pass').value }) }); alert("Sikeres!"); location.reload() } function kijelentkezes() { localStorage.removeItem('klani_token'); location.reload() } setInterval(() => { if (localStorage.getItem('klani_token')) { checkA(); fetchAkciok(); fetchBalance(); fetchTagok(); fetchLeadando(); if (myPermissions.jog_warn) fetchWarnList() } }, 30000);
-    </script>
+    let myUserId, myUserName, myUserRang, myPermissions, editTargetId = null, ALL_RANGS = [], ALL_TAGOK = [], ALL_AKCIOK = [];
+
+    async function apiFetch(url, options = {}) {
+        const t = localStorage.getItem('klani_token');
+        const h = { 'Content-Type': 'application/json' };
+        if (t) h['Authorization'] = `Bearer ${t}`;
+        options.headers = h;
+        const r = await fetch(url, options);
+        if (!r.ok) {
+            const d = await r.json();
+            alert(d.error);
+            return null;
+        }
+        return r;
+    }
+
+    async function checkA() {
+        const t = localStorage.getItem('klani_token');
+        if (!t) return;
+        try {
+            const r = await fetch('/api/auth/check', { headers: { 'Authorization': `Bearer ${t}` } });
+            if (!r.ok) {
+                kijelentkezes();
+                return;
+            }
+            const d = await r.json();
+            if (d.deleted) {
+                alert("A profilod törlésre került!");
+                kijelentkezes();
+            } else if (d.newToken) {
+                localStorage.setItem('klani_token', d.newToken);
+                location.reload();
+            }
+        } catch (e) {}
+    }
+
+    async function bejelentkezes() {
+        const n = document.getElementById('login-user').value;
+        const j = document.getElementById('login-pass').value;
+        const r = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nev: n, jelszo: j })
+        });
+        const d = await r.json();
+        if (d.success) {
+            if (d.elso_belepes) {
+                window.tempId = d.user.id;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                
+                // ÚJ SOR: Elrejti a navigációs menüt, ha első belépés!
+                document.querySelector('nav').style.display = 'none'; 
+                
+                tab('password-screen', null);
+            } else {
+                localStorage.setItem('klani_token', d.token);
+                location.reload();
+            }
+        } else {
+            document.getElementById('login-hiba').innerText = d.error;
+        }
+    }
+
+    function tab(i, b) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(i).classList.add('active');
+        if (b) {
+            document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active-nav'));
+            b.classList.add('active-nav');
+        }
+        if (i === 'profil-section') fetchProfil();
+        if (i === 'akcio-section') fetchAkciok();
+        if (i === 'warn-section') fetchWarnList();
+        if (i === 'leadando-section') fetchLeadando();
+    }
+
+    window.onload = async () => {
+        const t = localStorage.getItem('klani_token');
+        if (t) {
+            const d = JSON.parse(atob(t.split('.')[1]));
+            myUserId = d.id;
+            myUserName = d.ic_nev || d.nev;
+            myUserRang = d.rang;
+            myPermissions = d;
+            document.getElementById('logged-in-user').innerText = 'Felhasználó: ' + myUserName;
+            document.getElementById('header-rang').innerText = 'RANG: ' + myUserRang;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            checkA();
+            const rJ = await apiFetch('/api/jogosultsagok');
+            ALL_RANGS = await rJ.json();
+            if (myPermissions.jog_admin) {
+                const nj = document.getElementById('nav-jogok');
+                if (nj) nj.style.display = 'block';
+                fetchJogok();
+            }
+            if (myPermissions.jog_akcio) {
+                const uab = document.getElementById('uj-akcio-box');
+                if (uab) uab.style.display = 'block';
+            }
+            if (myPermissions.jog_akcio_tervezes || myUserRang === 'DEV') {
+                const tbb = document.getElementById('tervezes-box');
+                if (tbb) tbb.style.display = 'block';
+            }
+            if (myUserRang === 'DEV') {
+                const szb = document.getElementById('szezon-zaras-btn');
+                if (szb) szb.style.display = 'block';
+            }
+            if (myPermissions.jog_warn) {
+                const nw = document.getElementById('nav-warn');
+                if (nw) nw.style.display = 'block';
+            }
+            if (myPermissions.tag_kezel || myPermissions.jog_admin) {
+                const lab = document.getElementById('leadando-admin-box');
+                if (lab) lab.style.display = 'block';
+            }
+            const uhd = document.getElementById('uj-hir-doboz');
+            if (uhd) uhd.style.display = myPermissions.hir_iras ? 'block' : 'none';
+            const kc = document.getElementById('kassza-controls');
+            if (kc) kc.style.display = myPermissions.kassza ? 'flex' : 'none';
+            const tfb = document.getElementById('tag-felvetel-box');
+            if (tfb) tfb.style.display = myPermissions.tag_kezel ? 'block' : 'none';
+            fetchHirek();
+            fetchBalance();
+            fetchTagok();
+            fetchProfil();
+            fetchAkciok();
+            fetchLeadando();
+        }
+    };
+
+    async function fetchLeadando() {
+        try {
+            const r = await apiFetch('/api/leadando');
+            if (!r) return;
+            const d = await r.json();
+            if (!d || !d.tagok) return;
+            const m = d.tagok.find(x => x.id === myUserId);
+            const nBtn = document.getElementById('nav-leadando');
+            const kij = document.getElementById('leadando-sajat-display');
+            const gDob = document.getElementById('leadando-befizetes-box');
+            
+            if (m && kij) {
+                const b = m.heti_leadva || 0, k = m.kotelezo || 0;
+                if (k === 0) {
+                    kij.innerHTML = `<span style="color:var(--text-muted)">Nincsen kötelező leadandód!</span>`;
+                    if (nBtn) nBtn.classList.remove('nav-btn-warn');
+                    if (gDob) gDob.style.display = 'none';
+                } else {
+                    if (gDob) gDob.style.display = 'flex';
+                    if (b >= k) {
+                        kij.innerHTML = `<span style="color:var(--success)">Teljesítve: ${b.toLocaleString()} $ / ${k.toLocaleString()} $</span>`;
+                        if (nBtn) nBtn.classList.remove('nav-btn-warn');
+                    } else {
+                        kij.innerHTML = `<span style="color:var(--danger)">Hiányzik: ${b.toLocaleString()} $ / ${k.toLocaleString()} $</span>`;
+                        if (nBtn) nBtn.classList.add('nav-btn-warn');
+                    }
+                }
+            }
+            const aL = document.getElementById('leadando-admin-lista');
+            if (aL && (myPermissions.tag_kezel || myPermissions.jog_admin || myUserRang === 'DEV')) {
+                aL.innerHTML = '';
+                d.tagok.filter(x => x.rang !== 'DEV').forEach(x => {
+                    const b = x.heti_leadva || 0, k = x.kotelezo || 0;
+                    if (k === 0) return;
+                    const ksz = b >= k;
+                    aL.innerHTML += `<tr><td><strong style="color:var(--accent)">${x.ic_nev || x.nev}</strong></td><td>${x.rang}</td><td style="color:${ksz ? 'var(--success)' : 'var(--danger)'}">${b.toLocaleString()} $</td><td style="color:var(--text-muted)">${k.toLocaleString()} $</td><td>${ksz ? '<span style="color:var(--success); font-weight:bold;">✔️</span>' : '<span style="color:var(--danger); font-weight:bold;">❌</span>'}</td></tr>`;
+                });
+            }
+        } catch (e) {
+            const k = document.getElementById('leadando-sajat-display');
+            if (k) k.innerHTML = "<span style='color:red'>Hiba a betöltéskor!</span>";
+        }
+    }
+
+    async function inditLeadando() {
+        const oI = document.getElementById('leadando-osszeg');
+        const lI = document.getElementById('leadando-link');
+        const o = oI ? oI.value.replace(/\s/g, "") : 0;
+        const l = lI ? lI.value : '';
+        if (!o || isNaN(o) || parseInt(o) <= 0) return alert("Érvénytelen összeg!");
+        if (lI && (!l || !l.startsWith('http'))) return alert("Érvénytelen link!");
+        if (confirm(`Megerősíted ${parseInt(o).toLocaleString()}$ befizetését?`)) {
+            await apiFetch('/api/leadando', { method: 'POST', body: JSON.stringify({ osszeg: o, bizonyitek: l || 'Nincs link' }) });
+            alert("Sikeres rögzítés!");
+            if (oI) oI.value = '';
+            if (lI) lI.value = '';
+            fetchLeadando();
+            fetchBalance();
+        }
+    }
+
+    async function fetchWarnList() {
+        if (!myPermissions.jog_warn) return;
+        const r = await apiFetch('/api/warn');
+        const w = await r.json();
+        const tb = document.getElementById('warn-lista');
+        if (!tb) return;
+        tb.innerHTML = '';
+        w.forEach(x => {
+            const iE = x.lejaret && new Date(x.lejaret) < new Date();
+            const iA = x.aktiv && !iE;
+            let b = iA ? '<span class="badge badge-active">AKTÍV</span>' : '<span class="badge badge-expired">LEJÁRT/VISSZAVONT</span>';
+            let m = iA ? `<button class="btn btn-warn" style="padding:0.2rem 0.5rem; font-size:0.7rem;" onclick="vonWarn(${x.id})">Visszavonás</button>` : '';
+            m += ` <button class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.7rem; border:none;" onclick="torolWarn(${x.id})">🗑️</button>`;
+            const tT = ALL_TAGOK.find(y => y.id === x.tag_id);
+            const tN = tT ? (tT.ic_nev || tT.nev) : 'Törölt Tag';
+            let lS = x.lejaret ? new Date(x.lejaret).toLocaleDateString() : 'Végleges';
+            tb.innerHTML += `<tr><td style="color:var(--text-muted)">${new Date(x.datum).toLocaleDateString()}</td><td><strong style="color:var(--text)">${tN}</strong></td><td>${x.szervezo_nev}</td><td>${lS}</td><td>${b}</td><td>${m}</td></tr><tr><td colspan="6" style="padding-top:0; border-top:none; color:var(--text-muted); font-size:0.8rem;">Indok: <em>${x.indok}</em></td></tr>`;
+        });
+    }
+
+    async function kiosztWarn() {
+        const t = document.getElementById('warn-tag-select').value;
+        const n = document.getElementById('warn-napok').value;
+        const i = document.getElementById('warn-indok').value;
+        if (!t || !i) return alert("Minden mező kötelező!");
+        await apiFetch('/api/warn', { method: 'POST', body: JSON.stringify({ tag_id: t, indok: i, napok: n }) });
+        alert("Figyelmeztetés kiosztva!");
+        document.getElementById('warn-indok').value = '';
+        fetchWarnList();
+    }
+
+    async function vonWarn(id) {
+        if (confirm("Visszavonod?")) {
+            await apiFetch(`/api/warn/${id}`, { method: 'PUT', body: JSON.stringify({ aktiv: false }) });
+            fetchWarnList();
+        }
+    }
+
+    async function torolWarn(id) {
+        if (confirm("Törlöd?")) {
+            await apiFetch(`/api/warn/${id}`, { method: 'DELETE' });
+            fetchWarnList();
+        }
+    }
+
+    function renderWarnokProfilon(cId, w) {
+        const c = document.getElementById(cId);
+        if (!c) return;
+        if (!w || w.length === 0) {
+            c.innerHTML = '';
+            return;
+        }
+        let h = '<h3 style="color:var(--warn); margin-bottom:10px; font-size:1rem;">Figyelmeztetések</h3><div style="display:flex; flex-direction:column; gap:10px;">';
+        w.forEach(x => {
+            let b = x.aktiv_allapot ? '<span class="badge badge-active">AKTÍV</span>' : '<span class="badge badge-expired">LEJÁRT</span>';
+            let lS = x.lejaret ? new Date(x.lejaret).toLocaleDateString() : 'Végleges';
+            h += `<div style="background:rgba(251, 191, 36, 0.05); border:1px solid rgba(251, 191, 36, 0.2); padding:10px; border-radius:8px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">${b} <small style="color:var(--text-muted)">Lejárat: ${lS}</small></div><div style="color:var(--text); font-size:0.9rem;"><strong>Indok:</strong> ${x.indok}</div><div style="color:var(--text-muted); font-size:0.7rem; margin-top:5px; text-align:right;">Osztotta: ${x.szervezo_nev} - ${new Date(x.datum).toLocaleDateString()}</div></div>`;
+        });
+        c.innerHTML = h + '</div>';
+    }
+
+    async function megtekintProfil(id) {
+        const a = ALL_TAGOK.find(x => x.id === id);
+        if (a) {
+            document.getElementById('modal-ic').innerText = a.ic_nev || '-';
+            document.getElementById('modal-user').innerText = 'User: ' + a.nev;
+            document.getElementById('modal-rang').innerText = a.rang;
+            document.getElementById('modal-discord').innerText = a.discord || '-';
+        }
+        document.getElementById('modal-szervezett').innerText = '...';
+        document.getElementById('modal-resztvett').innerText = '...';
+        document.getElementById('modal-14-szervezett').innerText = '...';
+        document.getElementById('modal-14-resztvett').innerText = '...';
+        document.getElementById('modal-leiras').innerText = 'Betöltés...';
+        document.getElementById('modal-warns').innerHTML = '';
+        document.getElementById('profil-modal').style.display = 'flex';
+        
+        const r = await apiFetch(`/api/profil/${id}`);
+        if (!r) return;
+        const p = await r.json();
+        
+        document.getElementById('modal-szervezett').innerText = p.akcio_szervezett || 0;
+        document.getElementById('modal-resztvett').innerText = p.akcio_resztvett || 0;
+        document.getElementById('modal-14-szervezett').innerText = p.heti2_szervezett || 0;
+        document.getElementById('modal-14-resztvett').innerText = p.heti2_resztvett || 0;
+        document.getElementById('modal-leiras').innerText = p.bemutatkozas || '-';
+        renderWarnokProfilon('modal-warns', p.warnings);
+    }
+
+    async function fetchProfil() {
+        const r = await apiFetch(`/api/profil/${myUserId}`);
+        const p = await r.json();
+        let h = `<div class="card"><h2 style="color:var(--accent); margin-top:0;">Saját Profil</h2><div style="display:flex; align-items:center; gap:25px; flex-wrap:wrap; margin: 25px 0; padding:15px 20px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; font-size:1.1rem;"><div><strong style="color:var(--text-muted);">IC Név:</strong> <span style="color:var(--text);">${p.ic_nev || '-'}</span></div><div><strong style="color:var(--text-muted);">User:</strong> <span style="color:var(--accent); font-weight:bold;">${p.nev}</span></div><div><strong style="color:var(--text-muted);">Rang:</strong> <span style="color:white; border:1px solid var(--border); padding:0.2rem 0.8rem; border-radius:50px; background:rgba(255,255,255,0.05); font-size:0.9rem; margin-left:5px;">${p.rang}</span></div><div><strong style="color:var(--text-muted);">Discord ID:</strong> <span style="color:var(--text);">${p.discord || '-'}</span></div></div><div style="display:flex; gap:10px; margin-top:20px; padding:20px; background:rgba(0, 210, 255, 0.05); border-radius:8px; color:var(--accent); border:1px solid rgba(0,210,255,0.1); flex-wrap:wrap;"><div style="flex:1; min-width:120px;"><strong>Összes Szervezett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>Összes Résztvett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_resztvett || 0}</span></div><div style="flex:1; min-width:120px; border-left:1px solid rgba(0,210,255,0.2); padding-left:10px;"><strong>14 Napos Szervezett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>14 Napos Résztvett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_resztvett || 0}</span></div></div><div id="sajat-warns" style="margin-top:20px; margin-bottom:20px;"></div><p style="color:var(--text-muted); margin:0 0 10px 0;">Bemutatkozás / Jegyzet:</p><textarea id="input-bemutatkozas" rows="6" placeholder="Írj magadról vagy jegyzetelj...">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%; border-color:var(--accent); color:white; background:rgba(0,210,255,0.1); margin-bottom: 25px; letter-spacing:2px;" onclick="mentesProfil()">Mentés</button><div style="padding:20px; background:rgba(255, 45, 85, 0.03); border: 1px solid rgba(255, 45, 85, 0.2); border-radius:8px; margin-top:10px;"><h3 style="color:var(--danger); margin-top:0; font-size:1.3rem; text-shadow:0 0 10px var(--danger);">Jelszó Módosítása</h3><input type="password" id="profil-uj-jelszo" placeholder="Új jelszó..."><button class="btn btn-danger" style="width:100%; letter-spacing:2px;" onclick="profilJelszocsere()">Mentés</button></div></div>`;
+        const ps = document.getElementById('profil-section');
+        if (ps) {
+            ps.innerHTML = h;
+            renderWarnokProfilon('sajat-warns', p.warnings);
+        }
+    }
+
+    async function mentesProfil() {
+        await apiFetch(`/api/profil/${myUserId}`, { method: 'PUT', body: JSON.stringify({ bemutatkozas: document.getElementById('input-bemutatkozas').value }) });
+        alert("Mentve!");
+    }
+
+    async function profilJelszocsere() {
+        const u = document.getElementById('profil-uj-jelszo').value;
+        if (!u || u.length < 3) return alert("Érvénytelen jelszó!");
+        await apiFetch('/api/jelszocsere', { method: 'POST', body: JSON.stringify({ userId: myUserId, ujJelszo: u }) });
+        alert("Következő belépésnél az új jelszót használd!");
+        document.getElementById('profil-uj-jelszo').value = '';
+    }
+
+    async function fetchAkciok() {
+        const r = await apiFetch('/api/akcio');
+        ALL_AKCIOK = await r.json();
+        renderAkciok(ALL_AKCIOK, false);
+    }
+
+    function renderAkciok(l, iS = false) {
+        const c = document.getElementById('akciok-lista');
+        if (!c) return;
+        c.innerHTML = '';
+        const aA = l.filter(x => x.aktiv && !x.archivalva);
+        const lA = l.filter(x => !x.aktiv && !x.archivalva);
+        const arA = l.filter(x => x.archivalva);
+        const aG = document.getElementById('nav-akcio');
+        
+        if (aG) {
+            if (aA.length > 0) aG.classList.add('nav-btn-alert');
+            else aG.classList.remove('nav-btn-alert');
+        }
+        
+        let h = `<h3 style="color:var(--success); border-bottom:1px solid var(--border); padding-bottom:10px;">Aktív Akciók</h3>`;
+        if (aA.length === 0) h += `<p style="color:var(--text-muted); text-align:center; padding:20px; background:rgba(0,0,0,0.2); border-radius:8px;">${iS ? 'Nincs találat.' : 'Nincs akció.'}</p>`;
+        else aA.forEach(x => h += generalAkcioCard(x));
+        
+        if (myPermissions.jog_lezart_akcio || myUserRang === 'DEV') {
+            h += `<h3 style="color:var(--danger); border-bottom:1px solid var(--border); padding-bottom:10px; margin-top:30px;">Lezárt Akciók</h3>`;
+            if (lA.length === 0) h += `<p style="color:var(--text-muted)">${iS ? 'Nincs találat.' : 'Nincs lezárt.'}</p>`;
+            else lA.forEach(x => h += generalAkcioCard(x));
+            
+            if (iS) {
+                h += `<h3 style="color:var(--text-muted); border-bottom:1px solid var(--border); padding-bottom:10px; margin-top:30px;">Archivált Akciók (Keresés)</h3>`;
+                if (arA.length === 0) h += `<p style="color:var(--text-muted)">Nincs találat.</p>`;
+                else arA.forEach(x => h += generalAkcioCard(x));
+            } else {
+                h += `<div style="margin-top:40px; border-top: 1px dashed var(--border); padding-top:20px;"><button class="btn" style="width:100%; border-color:var(--text-muted); color:var(--text-muted);" onclick="toggleArchivum()">ARCHIVÁLT AKCIÓK</button></div><div id="archivum-container" style="display:none; margin-top:20px;"><h3 style="color:var(--text-muted)">Archivált Akciók</h3>`;
+                if (arA.length === 0) h += `<p style="color:var(--text-muted)">Üres archívum.</p>`;
+                else arA.forEach(x => h += generalAkcioCard(x));
+                h += `</div>`;
+            }
+        }
+        c.innerHTML = h;
+    }
+
+    function generalAkcioCard(a) {
+        let rH = a.resztvevok.map(x => `<li style="color:var(--text-muted);"><strong style="color:var(--text);">${x.ic_nev || x.nev}</strong> - <small>${new Date(x.ido).toLocaleTimeString()}</small></li>`).join('');
+        let g = '';
+        if (a.aktiv && !a.archivalva) {
+            const b = a.resztvevok.find(x => x.id === myUserId);
+            if (a.szervezo_id === myUserId) {
+                g += `<span style="color:var(--accent); font-weight:bold; margin-right:10px;">Te vagy a szervező</span>`;
+            } else if (!b) {
+                g += `<button class="btn" style="padding:0.4rem 0.8rem; font-size:0.7rem; border-color:var(--accent); color:var(--accent);" onclick="csatlakozikAkcio(${a.id})">Jelentkezés</button>`;
+            } else {
+                g += `<button class="btn btn-warn" style="padding:0.4rem 0.8rem; font-size:0.7rem; margin-right:10px;" onclick="kilepAkcio(${a.id})">Kijelentkezés</button>`;
+            }
+            if (myPermissions.jog_akcio || myUserRang === 'DEV') {
+                g += ` <button class="btn btn-danger" style="padding:0.4rem 0.8rem; font-size:0.7rem;" onclick="zarAkcio(${a.id})">ZÁRÁS</button>`;
+            }
+        } else if (a.archivalva) {
+            g = `<span style="color:var(--text-muted); font-weight:bold;">[ ARCHIVÁLVA ]</span>`;
+        } else {
+            g = `<span style="color:var(--danger); font-weight:bold;">[ LEZÁRT ]</span>`;
+        }
+        
+        let iSz = `<small>${new Date(a.datum).toLocaleString()}</small>`;
+        let sJ = '';
+        if (a.tervezett_ido) {
+            const tI = new Date(a.tervezett_ido);
+            iSz = `<small style="color:var(--warn); font-weight:bold;">Tervezett időpont: ${tI.toLocaleString()}</small>`;
+            if (tI > new Date() && a.aktiv) {
+                sJ = ` <span class="badge" style="background:rgba(251, 191, 36, 0.1); color:var(--warn); border:1px solid var(--warn);">TERVEZETT</span>`;
+            }
+        }
+        return `<div class="card" style="border: 1px solid ${a.aktiv ? 'var(--border)' : 'transparent'}; background: ${a.aktiv ? 'var(--surface)' : 'rgba(0,0,0,0.2)'}; margin-bottom: 15px; padding: 1.5rem;"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;"><h3 style="margin:0; color:${a.aktiv ? 'var(--accent)' : 'var(--text-muted)'}">[ ${a.tipus} ] - Szervező: ${a.szervezo_nev}${sJ}</h3><div>${g}</div></div><p style="color:var(--text-muted); margin-bottom:5px;">${iSz}</p><div style="margin-top:15px; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;"><strong style="color:var(--text);">Résztvevők (${a.resztvevok.length} fő):</strong><ul style="margin-top:10px; padding-left:20px; line-height:1.8;">${rH || '<li>Még senki nem csatlakozott.</li>'}</ul></div></div>`;
+    }
+
+    function szuresAkciok(v) {
+        const vl = v.toLowerCase();
+        if (!vl) {
+            renderAkciok(ALL_AKCIOK, false);
+            return;
+        }
+        renderAkciok(ALL_AKCIOK.filter(x => (x.szervezo_nev || '').toLowerCase().includes(vl) || x.resztvevok.some(y => (y.nev || '').toLowerCase().includes(vl) || (y.ic_nev || '').toLowerCase().includes(vl))), true);
+    }
+
+    function toggleArchivum() {
+        const a = document.getElementById('archivum-container');
+        if (a) a.style.display = a.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function letrehozAkcio() {
+        const tI = document.getElementById('uj-akcio-ido');
+        let tV = null;
+        if (tI && tI.value) {
+            tV = new Date(tI.value).toISOString();
+        }
+        await apiFetch('/api/akcio', { method: 'POST', body: JSON.stringify({ tipus: document.getElementById('uj-akcio-tipus').value, tervezett_ido: tV }) });
+        fetchAkciok();
+        if (tI) tI.value = '';
+    }
+
+    async function csatlakozikAkcio(id) {
+        await apiFetch(`/api/akcio/${id}/join`, { method: 'PUT' });
+        fetchAkciok();
+        fetchProfil();
+    }
+
+    async function kilepAkcio(id) {
+        if (confirm("Biztosan kijelentkezel ebből a műveletből?")) {
+            await apiFetch(`/api/akcio/${id}/leave`, { method: 'PUT' });
+            fetchAkciok();
+            fetchProfil();
+        }
+    }
+
+    async function zarAkcio(id) {
+        if (confirm("Lezárod?")) {
+            await apiFetch(`/api/akcio/${id}/close`, { method: 'PUT' });
+            fetchAkciok();
+        }
+    }
+
+    async function szezonzaras() {
+        if (confirm("Ezzel minden statisztika nullázódik. Folytatod?")) {
+            await apiFetch('/api/akcio_archiv', { method: 'POST' });
+            alert("Szezon lezárva!");
+            fetchAkciok();
+            fetchProfil();
+        }
+    }
+
+    async function fetchTagok() {
+        const r = await apiFetch('/api/tagok');
+        ALL_TAGOK = await r.json();
+        const s = document.getElementById('uj-tag-rang-select');
+        const sw = document.getElementById('warn-tag-select');
+        if (s) {
+            s.innerHTML = '';
+            ALL_RANGS.forEach(x => {
+                if (x.rang === 'DEV' && myUserRang !== 'DEV') return;
+                s.innerHTML += `<option value="${x.rang}">${x.rang}</option>`;
+            });
+        }
+        if (sw) {
+            sw.innerHTML = '';
+            ALL_TAGOK.forEach(x => {
+                if (x.rang !== 'DEV') sw.innerHTML += `<option value="${x.id}">${x.ic_nev || x.nev}</option>`;
+            });
+        }
+        renderTagok(ALL_TAGOK);
+    }
+
+    function renderTagok(l) {
+        const tb = document.getElementById('tagok-lista');
+        if (!tb) return;
+        tb.innerHTML = '';
+        l.forEach(x => {
+            if (x.rang === 'DEV') return;
+            let m = `<button class="btn" style="padding:0.3rem 0.8rem; font-size:0.7rem; border-color:var(--accent); color:var(--accent);" onclick="megtekintProfil(${x.id})">PROFIL</button>`;
+            if (myPermissions.nev_valtoztat) {
+                m += ` <button class="btn" style="padding:0.3rem 0.8rem; font-size:0.7rem; border-color:var(--success); color:var(--success);" onclick="nyitTagSzerkesztes(${x.id},'${x.nev}','${x.ic_nev}','${x.discord}','${x.rang}')">Szerk</button> <button class="btn btn-danger" style="padding:0.3rem 0.6rem; font-size:0.8rem; border:none;" onclick="tagTorles(${x.id})">🗑️</button>`;
+            }
+            tb.innerHTML += `<tr><td><strong style="color:var(--accent)">${x.ic_nev || '-'}</strong><br><small style="color:var(--text-muted);">${x.nev}</small></td><td style="color:var(--text-muted);">${x.rang}</td><td>${m}</td></tr>`;
+        });
+    }
+
+    function szuresTagok(v) {
+        const vl = v.toLowerCase();
+        renderTagok(ALL_TAGOK.filter(x => (x.ic_nev || '').toLowerCase().includes(vl) || x.nev.toLowerCase().includes(vl) || (x.discord || '').toLowerCase().includes(vl)));
+    }
+
+    function nyitTagSzerkesztes(i, n, ic, d, r) {
+        editTargetId = i;
+        document.getElementById('edit-tag-user').value = n;
+        document.getElementById('edit-tag-ic').value = ic;
+        document.getElementById('edit-tag-discord').value = d;
+        const s = document.getElementById('edit-tag-rang');
+        s.innerHTML = '';
+        ALL_RANGS.forEach(x => {
+            if (x.rang === 'DEV' && myUserRang !== 'DEV') return;
+            s.innerHTML += `<option value="${x.rang}" ${x.rang === r ? 'selected' : ''}>${x.rang}</option>`;
+        });
+        document.getElementById('edit-tag-modal').style.display = 'flex';
+    }
+
+    async function veglegesitTagSzerkesztes() {
+        const u = {
+            ic_nev: document.getElementById('edit-tag-ic').value,
+            discord: document.getElementById('edit-tag-discord').value,
+            rang: document.getElementById('edit-tag-rang').value
+        };
+        if (myPermissions.prio <= 2) u.nev = document.getElementById('edit-tag-user').value;
+        await apiFetch(`/api/tagok/${editTargetId}`, { method: 'PUT', body: JSON.stringify(u) });
+        document.getElementById('edit-tag-modal').style.display = 'none';
+        fetchTagok();
+    }
+
+    async function tagTorles(id) {
+        if (confirm("Törlöd?")) {
+            await apiFetch(`/api/tagok/${id}`, { method: 'DELETE' });
+            fetchTagok();
+        }
+    }
+
+    async function fetchJogok() {
+        const r = await apiFetch('/api/jogosultsagok');
+        const j = await r.json();
+        const tb = document.getElementById('jogok-lista');
+        if (!tb) return;
+        tb.innerHTML = '';
+        j.forEach(x => {
+            let rC = x.rang === 'DEV' 
+                ? `<td>DEV (${x.prioritas})</td><td colspan="11" style="text-align:center; color:var(--text-muted); font-weight:600; letter-spacing:2px;">[ ÉRÍNTHETETLEN ]</td><td>-</td>` 
+                : `<td style="white-space: nowrap;"><input type="text" class="edit-rang-nev" data-old-rang="${x.rang}" value="${x.rang}" style="width:90px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--text); border-radius:4px; text-align:center;"> (<input type="number" class="edit-rang-prio" value="${x.prioritas}" style="width:40px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--text); border-radius:4px; text-align:center;">)</td><td><input type="number" class="edit-rang-leadando" value="${x.leadando || 0}" style="width:80px; margin:0; padding:0.4rem; background:rgba(0,0,0,0.3); border:none; color:var(--warn); border-radius:4px; text-align:center; font-weight:bold;"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.hir_iras ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'hir_iras', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.hir_kezel ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'hir_kezel', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.kassza ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'kassza', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.tag_kezel ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'tag_kezel', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_admin ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_admin', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.nev_valtoztat ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'nev_valtoztat', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_akcio ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_akcio', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_akcio_tervezes ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_akcio_tervezes', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_lezart_akcio ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_lezart_akcio', this.checked)"></td><td><input type="checkbox" style="width:auto; margin:0;" ${x.jog_warn ? 'checked' : ''} onchange="mentesRang('${x.rang}', 'jog_warn', this.checked)"></td><td><button onclick="torolRang('${x.rang}')" style="color:var(--danger); background:none; border:none; cursor:pointer; font-size:1.2rem;">🗑️</button></td>`;
+            tb.innerHTML += `<tr>${rC}</tr>`;
+        });
+    }
+
+    async function mentesOsszesRangText() {
+        const n = document.querySelectorAll('.edit-rang-nev');
+        const p = document.querySelectorAll('.edit-rang-prio');
+        const l = document.querySelectorAll('.edit-rang-leadando');
+        const pr = [];
+        for (let i = 0; i < n.length; i++) {
+            pr.push(apiFetch(`/api/jogosultsagok/${encodeURIComponent(n[i].getAttribute('data-old-rang'))}`, {
+                method: 'PUT',
+                body: JSON.stringify({ rang: n[i].value, prioritas: parseInt(p[i].value), leadando: parseInt(l[i].value) })
+            }));
+        }
+        await Promise.all(pr);
+        alert("Mentve!");
+        fetchJogok();
+        fetchTagok();
+        fetchLeadando();
+    }
+
+    async function mentesRang(r, m, e) {
+        await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'PUT', body: JSON.stringify({ [m]: e }) });
+    }
+
+    async function letrehozRang() {
+        await apiFetch('/api/jogosultsagok', {
+            method: 'POST',
+            body: JSON.stringify({ rang: document.getElementById('uj-rang-nev').value, prioritas: parseInt(document.getElementById('uj-rang-prio').value) })
+        });
+        fetchJogok();
+    }
+
+    async function torolRang(r) {
+        if (confirm("Törlöd?")) {
+            await apiFetch(`/api/jogosultsagok/${encodeURIComponent(r)}`, { method: 'DELETE' });
+            fetchJogok();
+        }
+    }
+
+    function formatNumber(i) {
+        i.value = i.value.replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    let aktualisTranzakcio = {};
+
+    function inditTranzakcio(t) {
+        const o = document.getElementById('osszeg').value.replace(/\s/g, "");
+        if (!o || isNaN(o)) return alert("Érvénytelen!");
+        aktualisTranzakcio = { tipus: t, osszeg: parseInt(o) };
+        document.getElementById('modal-osszeg-display').innerText = (t === 'be' ? 'Befizetés: ' : 'Kivétel: ') + parseInt(o).toLocaleString() + " $";
+        document.getElementById('modal-osszeg-display').style.color = t === 'be' ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('kassza-modal').style.display = 'flex';
+    }
+
+    function valtsIgazolasTipus(v) {
+        document.getElementById('igazolas-input-container').innerHTML = v === 'link' 
+            ? '<input type="text" id="kassza-bizonyitek" placeholder="https://...">' 
+            : '<textarea id="kassza-bizonyitek" placeholder="Megjegyzés..."></textarea>';
+    }
+
+    async function veglegesitTranzakcio() {
+        const b = document.getElementById('kassza-bizonyitek').value;
+        if (!b) return alert("Add meg!");
+        await apiFetch('/api/kassza', { method: 'POST', body: JSON.stringify({ tipus: aktualisTranzakcio.tipus, osszeg: aktualisTranzakcio.osszeg, bizonyitek: b, operator: myUserName }) });
+        location.reload();
+    }
+
+    function zárKasszaModal() {
+        document.getElementById('kassza-modal').style.display = 'none';
+    }
+
+    async function fetchBalance() {
+        const r = await apiFetch('/api/kassza');
+        const d = await r.json();
+        document.getElementById('balanceDisplay').innerText = d.balance.toLocaleString() + ' $';
+        const tb = document.getElementById('kassza-log-lista');
+        if (!tb) return;
+        tb.innerHTML = '';
+        d.logs.forEach(x => {
+            tb.innerHTML += `<tr><td style="color:var(--text-muted);">${new Date(x.datum).toLocaleDateString()}</td><td>${x.operator}</td><td style="color:${x.tipus === 'be' ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${x.tipus.toUpperCase()}</td><td>${x.osszeg.toLocaleString()} $</td><td>${x.bizonyitek?.startsWith('http') ? `<a href="${x.bizonyitek}" target="_blank" style="color:var(--accent)">LINK</a>` : (x.bizonyitek || '-')}</td></tr>`;
+        });
+    }
+
+    async function fetchHirek() {
+        const l = document.getElementById('hirek-lista');
+        if (!l) return;
+        l.innerHTML = '<div style="text-align:center; padding: 2rem; color:var(--text-muted);">Betöltés...</div>';
+        const r = await apiFetch('/api/hirek');
+        if (!r) {
+            l.innerHTML = '<div style="text-align:center; color:var(--danger);">Hiba!</div>';
+            return;
+        }
+        const h = await r.json();
+        l.innerHTML = '';
+        if (h.length === 0) {
+            l.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);">Üres.</div>';
+        } else {
+            h.forEach(x => {
+                let d = myPermissions.hir_kezel ? `<button class="btn btn-danger" style="padding:0.2rem 0.5rem; font-size:0.8rem; border:none;" onclick="torolHir(${x.id})">🗑️</button>` : '';
+                let fS = x.tartalom ? x.tartalom.replace(/\n/g, '<br>') : '';
+                l.innerHTML += `<div class="card" style="padding:1.5rem;"><div style="display:flex; justify-content:space-between"><strong style="color:var(--accent); font-size:1.2rem;">${x.cim}</strong>${d}</div><small style="color:var(--text-muted); display:block; margin-top:5px;">${x.iro} • ${new Date(x.datum).toLocaleString()}</small><p style="margin-top:15px; color:var(--text); line-height:1.6;">${fS}</p></div>`;
+            });
+        }
+    }
+
+    async function ujTagMentese() {
+        const n = document.getElementById('uj-tag-user').value;
+        const ic = document.getElementById('uj-tag-ic').value;
+        const d = document.getElementById('uj-tag-discord').value;
+        const r = document.getElementById('uj-tag-rang-select').value;
+        if (!n) return alert("Kötelező!");
+        const rS = await apiFetch('/api/tagok', { method: 'POST', body: JSON.stringify({ nev: n, ic_nev: ic, discord: d, rang: r }) });
+        if (rS) {
+            alert("Sikeres!");
+            document.getElementById('uj-tag-user').value = '';
+            document.getElementById('uj-tag-ic').value = '';
+            document.getElementById('uj-tag-discord').value = '';
+            fetchTagok();
+        }
+    }
+
+    async function posztolHir() {
+        await apiFetch('/api/hirek', { method: 'POST', body: JSON.stringify({ cim: document.getElementById('hir-cim').value, tartalom: document.getElementById('hir-tartalom').value }) });
+        location.reload();
+    }
+
+    async function torolHir(id) {
+        if (confirm("Törlöd?")) {
+            await apiFetch(`/api/hirek/${id}`, { method: 'DELETE' });
+            fetchHirek();
+        }
+    }
+
+    async function jelszocsere() {
+        await apiFetch('/api/jelszocsere', { method: 'POST', body: JSON.stringify({ userId: window.tempId, ujJelszo: document.getElementById('new-pass').value }) });
+        alert("Sikeres!");
+        location.reload();
+    }
+
+    function kijelentkezes() {
+        localStorage.removeItem('klani_token');
+        location.reload();
+    }
+
+    setInterval(() => {
+        if (localStorage.getItem('klani_token')) {
+            checkA();
+            fetchAkciok();
+            fetchBalance();
+            fetchTagok();
+            fetchLeadando();
+            if (myPermissions && myPermissions.jog_warn) fetchWarnList();
+        }
+    }, 30000);
+</script>
 </body>
 
 </html>
