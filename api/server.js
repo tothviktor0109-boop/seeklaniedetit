@@ -23,19 +23,16 @@ async function checkAndProcessZaras() {
         if (new Date() >= nextZaras) {
             let ujZaras = new Date(nextZaras);
             ujZaras.setDate(ujZaras.getDate() + 7);
-            await supabase.from('beallitasok').update({ ertek: ujZaras.toISOString() }).eq('kulcs', 'kov_zaras');
-            const egyOraja = new Date();
-            egyOraja.setHours(egyOraja.getHours() - 1);
-            
-            const { data: eddigiWarnok } = await supabase.from('figyelmeztetesek')
-                .select('id')
-                .eq('szervezo_nev', 'RENDSZER AUTOMA')
-                .gte('datum', egyOraja.toISOString())
-                .limit(1);
+            const { data: lockCheck } = await supabase.from('beallitasok')
+                .update({ ertek: ujZaras.toISOString() })
+                .eq('kulcs', 'kov_zaras')
+                .eq('ertek', nextZarasStr)
+                .select();
 
-            if (eddigiWarnok && eddigiWarnok.length > 0) {
+            if (!lockCheck || lockCheck.length === 0) {
                 return; 
             }
+
             const { data: tagok } = await supabase.from('tagok').select('id, rang, heti_leadva');
             const { data: rangok } = await supabase.from('jogosultsagok').select('rang, leadando');
             const warnsToInsert = [];
