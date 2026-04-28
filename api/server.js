@@ -6,52 +6,8 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANO
 const JWT_SECRET = process.env.JWT_SECRET || 'titkos-kulcs-123';
 const SALT_ROUNDS = 10;
 
-async function checkAndProcessZaras() {
-    try {
-        const { data: bData } = await supabase.from('beallitasok').select('ertek').eq('kulcs', 'kov_zaras').single();
-        let nextZarasStr = bData?.ertek;
-
-        if (!nextZarasStr) {
-            let nextMon = new Date();
-            nextMon.setDate(nextMon.getDate() + ((1 + 7 - nextMon.getDay()) % 7 || 7));
-            nextMon.setUTCHours(18, 0, 0, 0); 
-            await supabase.from('beallitasok').insert([{ kulcs: 'kov_zaras', ertek: nextMon.toISOString() }]);
-            return;
-        }
-
-        const nextZaras = new Date(nextZarasStr);
-        if (new Date() >= nextZaras) {
-            let ujZaras = new Date(nextZaras);
-            ujZaras.setDate(ujZaras.getDate() + 7);
-            const { data: lockCheck } = await supabase.from('beallitasok')
-                .update({ ertek: ujZaras.toISOString() })
-                .eq('kulcs', 'kov_zaras')
-                .eq('ertek', nextZarasStr)
-                .select();
-
-            if (!lockCheck || lockCheck.length === 0) {
-                return; 
-            }
-
-            const { data: tagok } = await supabase.from('tagok').select('id, rang, heti_leadva');
-            const { data: rangok } = await supabase.from('jogosultsagok').select('rang, leadando');
-            const warnsToInsert = [];
-            const lejarat = new Date();
-            lejarat.setDate(lejarat.getDate() + 30); 
-
-            tagok.forEach(t => {
-                const rData = rangok.find(r => r.rang === t.rang);
-                const quota = rData ? rData.leadando : 0;
-                if (quota > 0 && t.heti_leadva < quota) {
-                    warnsToInsert.push({ tag_id: t.id, szervezo_id: null, szervezo_nev: 'RENDSZER AUTOMA', indok: `Leadandó hiánya (Leadva: ${t.heti_leadva}$ / ${quota}$)`, lejaret: lejarat.toISOString() });
-                }
-            });
-
-            if (warnsToInsert.length > 0) await supabase.from('figyelmeztetesek').insert(warnsToInsert);
-            await supabase.from('tagok').update({ heti_leadva: 0 }).gt('id', 0);
-        }
-    } catch (e) { console.error("Zárás hiba: ", e); }
-}
+// Memóriazár a dupla kattintások ellen (Manuális zárásnál)
+let isZarasFolyamatban = false;
 
 export default async function handler(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -63,8 +19,6 @@ export default async function handler(req, res) {
     if (authHeader) { try { user = jwt.verify(authHeader.split(' ')[1], JWT_SECRET); } catch (e) {} }
 
     try {
-        await checkAndProcessZaras();
-
         //LOGIN
         if (path === '/api/login' && method === 'POST') {
             const { nev, jelszo } = req.body;
@@ -109,6 +63,42 @@ export default async function handler(req, res) {
                 return res.json({ valid: true, newToken });
             }
             return res.json({ valid: true });
+        }
+
+        // --- MANUÁLIS LEADANDÓ ZÁRÁS (ÚJ FUNKCIÓ) ---
+        if (path === '/api/leadando_zaras' && method === 'POST') {
+            if (!user.jog_admin && user.rang !== 'DEV') return res.status(403).json({error: 'Nincs jogosultságod a záráshoz!'});
+            if (isZarasFolyamatban) return res.status(400).json({error: 'A zárás éppen folyamatban van, kérlek várj!'});
+
+            isZarasFolyamatban = true; 
+            try {
+                const { data: tagok } = await supabase.from('tagok').select('id, rang, heti_leadva');
+                const { data: rangok } = await supabase.from('jogosultsagok').select('rang, leadando');
+                const warnsToInsert = [];
+                const lejarat = new Date();
+                lejarat.setDate(lejarat.getDate() + 30); 
+
+                tagok.forEach(t => {
+                    const rData = rangok.find(r => r.rang === t.rang);
+                    const quota = rData ? rData.leadando : 0;
+                    if (quota > 0 && t.heti_leadva < quota) {
+                        warnsToInsert.push({ 
+                            tag_id: t.id, 
+                            szervezo_id: user.id, 
+                            szervezo_nev: user.ic_nev || user.nev, 
+                            indok: `Leadandó hiánya (Leadva: ${t.heti_leadva}$ / ${quota}$)`, 
+                            lejaret: lejarat.toISOString() 
+                        });
+                    }
+                });
+
+                if (warnsToInsert.length > 0) await supabase.from('figyelmeztetesek').insert(warnsToInsert);
+                await supabase.from('tagok').update({ heti_leadva: 0 }).gt('id', 0);
+                
+                return res.json({ success: true, kiosztva: warnsToInsert.length });
+            } finally {
+                isZarasFolyamatban = false; 
+            }
         }
 
         //LEADANDÓ

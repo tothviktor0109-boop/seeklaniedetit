@@ -500,12 +500,10 @@
                 </div>
                 <div id="hirek-lista"></div>
             </div>
-            <div id="leadando-section" class="section">
+<div id="leadando-section" class="section">
                 <div class="card" style="text-align:center">
                     <h2 style="color:var(--warn);margin-top:0">Heti Leadandó Státusz</h2>
-                    <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:20px">Zárás és nullázás minden
-                        Hétfőn 20:00-kor! (Ha nem adtad le időben akkor automatikusan WARN-t kapsz ami 1 hónapig
-                        érvényes!)</p>
+                    <p style="color:var(--text-muted);font-size:.8rem;margin-bottom:20px">A heti leadandót a vezetőség manuálisan zárja le. A hiányzók automatikusan WARN-t kapnak (1 hónapos lejárattal)!</p>
                     <h1 id="leadando-sajat-display" style="font-size:2.5rem;margin:0 0 20px 0">Betöltés...</h1>
                     <div id="leadando-befizetes-box"
                         style="display:none;justify-content:center;align-items:center;gap:15px;flex-wrap:wrap;margin-top:10px">
@@ -521,6 +519,27 @@
                         </div><button class="btn btn-warn" onclick="inditLeadando()">Befizetés rögzítése</button>
                     </div>
                 </div>
+                <div id="leadando-admin-box" class="card" style="display:none;padding:0;overflow:hidden">
+                    <h3 style="padding:1.5rem 1.5rem 0 1.5rem;color:var(--accent);margin:0;display:flex;justify-content:space-between;align-items:center;">
+                        Tagok Leadandó Állapota
+                        <button id="manualis-zaras-btn" class="btn btn-danger" style="display:none;padding:0.4rem 0.8rem;font-size:0.7rem;letter-spacing:1px;" onclick="manualisLeadandoZaras()">HETI ZÁRÁS</button>
+                    </h3>
+                    <div class="table-wrapper" style="border:none;border-top:1px solid var(--border);border-radius:0">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Név</th>
+                                    <th>Rang</th>
+                                    <th>Befizetve a héten</th>
+                                    <th>Kötelező Leadandó</th>
+                                    <th>Státusz</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leadando-admin-lista"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
                 <div id="leadando-admin-box" class="card" style="display:none;padding:0;overflow:hidden">
                     <h3 style="padding:1.5rem 1.5rem 0 1.5rem;color:var(--accent);margin:0">Tagok Leadandó Állapota</h3>
                     <div class="table-wrapper" style="border:none;border-top:1px solid var(--border);border-radius:0">
@@ -800,7 +819,7 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
                 
-                // ÚJ SOR: Elrejti a navigációs menüt, ha első belépés!
+                // Menü elrejtése az első belépéskor (amíg nem vált jelszót)
                 document.querySelector('nav').style.display = 'none'; 
                 
                 tab('password-screen', null);
@@ -841,6 +860,7 @@
             checkA();
             const rJ = await apiFetch('/api/jogosultsagok');
             ALL_RANGS = await rJ.json();
+            
             if (myPermissions.jog_admin) {
                 const nj = document.getElementById('nav-jogok');
                 if (nj) nj.style.display = 'block';
@@ -866,12 +886,19 @@
                 const lab = document.getElementById('leadando-admin-box');
                 if (lab) lab.style.display = 'block';
             }
+            // Manuális Heti Zárás gomb megjelenítése
+            if (myPermissions.jog_admin || myUserRang === 'DEV') {
+                const mzb = document.getElementById('manualis-zaras-btn');
+                if (mzb) mzb.style.display = 'block';
+            }
+            
             const uhd = document.getElementById('uj-hir-doboz');
             if (uhd) uhd.style.display = myPermissions.hir_iras ? 'block' : 'none';
             const kc = document.getElementById('kassza-controls');
             if (kc) kc.style.display = myPermissions.kassza ? 'flex' : 'none';
             const tfb = document.getElementById('tag-felvetel-box');
             if (tfb) tfb.style.display = myPermissions.tag_kezel ? 'block' : 'none';
+            
             fetchHirek();
             fetchBalance();
             fetchTagok();
@@ -880,6 +907,18 @@
             fetchLeadando();
         }
     };
+
+    async function manualisLeadandoZaras() {
+        if (confirm("FIGYELEM!\n\nBiztosan lezárod a hetet? Ez MINDENKINÉL lenullázza a leadandót, és automatikusan kiosztja a büntetéseket!")) {
+            const r = await apiFetch('/api/leadando_zaras', { method: 'POST' });
+            if (r) {
+                const d = await r.json();
+                alert(`Sikeres zárás! Kiosztott büntetések száma: ${d.kiosztva} db.`);
+                fetchLeadando();
+                if (myPermissions && myPermissions.jog_warn) fetchWarnList();
+            }
+        }
+    }
 
     async function fetchLeadando() {
         try {
@@ -1424,7 +1463,8 @@
             fetchLeadando();
             if (myPermissions && myPermissions.jog_warn) fetchWarnList();
         }
-    }, 300000);
+    }, 300000); 
+
 </script>
 </body>
 
