@@ -818,8 +818,6 @@
                 window.tempId = d.user.id;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-app').style.display = 'block';
-                
-                // Menü elrejtése az első belépéskor (amíg nem vált jelszót)
                 document.querySelector('nav').style.display = 'none'; 
                 
                 tab('password-screen', null);
@@ -886,7 +884,6 @@
                 const lab = document.getElementById('leadando-admin-box');
                 if (lab) lab.style.display = 'block';
             }
-            // Manuális Heti Zárás gomb megjelenítése
             if (myPermissions.jog_admin || myUserRang === 'DEV') {
                 const mzb = document.getElementById('manualis-zaras-btn');
                 if (mzb) mzb.style.display = 'block';
@@ -1070,10 +1067,59 @@
         renderWarnokProfilon('modal-warns', p.warnings);
     }
 
-    async function fetchProfil() {
+async function fetchProfil() {
         const r = await apiFetch(`/api/profil/${myUserId}`);
         const p = await r.json();
-        let h = `<div class="card"><h2 style="color:var(--accent); margin-top:0;">Saját Profil</h2><div style="display:flex; align-items:center; gap:25px; flex-wrap:wrap; margin: 25px 0; padding:15px 20px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; font-size:1.1rem;"><div><strong style="color:var(--text-muted);">IC Név:</strong> <span style="color:var(--text);">${p.ic_nev || '-'}</span></div><div><strong style="color:var(--text-muted);">User:</strong> <span style="color:var(--accent); font-weight:bold;">${p.nev}</span></div><div><strong style="color:var(--text-muted);">Rang:</strong> <span style="color:white; border:1px solid var(--border); padding:0.2rem 0.8rem; border-radius:50px; background:rgba(255,255,255,0.05); font-size:0.9rem; margin-left:5px;">${p.rang}</span></div><div><strong style="color:var(--text-muted);">Discord ID:</strong> <span style="color:var(--text);">${p.discord || '-'}</span></div></div><div style="display:flex; gap:10px; margin-top:20px; padding:20px; background:rgba(0, 210, 255, 0.05); border-radius:8px; color:var(--accent); border:1px solid rgba(0,210,255,0.1); flex-wrap:wrap;"><div style="flex:1; min-width:120px;"><strong>Összes Szervezett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>Összes Résztvett:</strong> <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_resztvett || 0}</span></div><div style="flex:1; min-width:120px; border-left:1px solid rgba(0,210,255,0.2); padding-left:10px;"><strong>14 Napos Szervezett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_szervezett || 0}</span></div><div style="flex:1; min-width:120px;"><strong>14 Napos Résztvett:</strong> <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_resztvett || 0}</span></div></div><div id="sajat-warns" style="margin-top:20px; margin-bottom:20px;"></div><p style="color:var(--text-muted); margin:0 0 10px 0;">Bemutatkozás / Jegyzet:</p><textarea id="input-bemutatkozas" rows="6" placeholder="Írj magadról vagy jegyzetelj...">${p.bemutatkozas || ''}</textarea><button class="btn" style="width: 100%; border-color:var(--accent); color:white; background:rgba(0,210,255,0.1); margin-bottom: 25px; letter-spacing:2px;" onclick="mentesProfil()">Mentés</button><div style="padding:20px; background:rgba(255, 45, 85, 0.03); border: 1px solid rgba(255, 45, 85, 0.2); border-radius:8px; margin-top:10px;"><h3 style="color:var(--danger); margin-top:0; font-size:1.3rem; text-shadow:0 0 10px var(--danger);">Jelszó Módosítása</h3><input type="password" id="profil-uj-jelszo" placeholder="Új jelszó..."><button class="btn btn-danger" style="width:100%; letter-spacing:2px;" onclick="profilJelszocsere()">Mentés</button></div></div>`;
+        const tooltipOsszesSzervezett = `<div class="tooltip" style="display:inline-block; margin-left:5px;"><span style="color:var(--text-muted); cursor:help; font-size:1rem;">ⓘ</span><span class="tooltiptext" style="width:220px; font-weight:normal; font-size:0.85rem; text-transform:none; line-height:1.4;">Ez a szám mutatja, hogy a kezdetek óta összesen hány akciót <b>SZERVEZTÉL</b> (aktív, lezárt).</span></div>`;
+        
+        const tooltipOsszesResztvett = `<div class="tooltip" style="display:inline-block; margin-left:5px;"><span style="color:var(--text-muted); cursor:help; font-size:1rem;">ⓘ</span><span class="tooltiptext" style="width:220px; font-weight:normal; font-size:0.85rem; text-transform:none; line-height:1.4;">Ez a szám mutatja, hogy a kezdetek óta összesen hány akción <b>VETTÉL RÉSZT</b> (aktív, lezárt).</span></div>`;
+        
+        const tooltip14NaposSzervezett = `<div class="tooltip" style="display:inline-block; margin-left:5px;"><span style="color:var(--text-muted); cursor:help; font-size:1rem;">ⓘ</span><span class="tooltiptext" style="width:220px; font-weight:normal; font-size:0.85rem; text-transform:none; line-height:1.4;">Ez a szám mutatja, hogy az elmúlt 14 napban hány akciót <b>SZERVEZTÉL</b>. A 14 napnál régebbi akciók automatikusan kiesnek.</span></div>`;
+        
+        const tooltip14NaposResztvett = `<div class="tooltip" style="display:inline-block; margin-left:5px;"><span style="color:var(--text-muted); cursor:help; font-size:1rem;">ⓘ</span><span class="tooltiptext" style="width:220px; font-weight:normal; font-size:0.85rem; text-transform:none; line-height:1.4;">Ez a szám mutatja, hogy az elmúlt 14 napban hány akción <b>VETTÉL RÉSZT</b>. A 14 napnál régebbi akciók automatikusan kiesnek.</span></div>`;
+
+        let h = `<div class="card">
+            <h2 style="color:var(--accent); margin-top:0;">Saját Profil</h2>
+            
+            <div style="display:flex; align-items:center; gap:25px; flex-wrap:wrap; margin: 25px 0; padding:15px 20px; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; font-size:1.1rem;">
+                <div><strong style="color:var(--text-muted);">IC Név:</strong> <span style="color:var(--text);">${p.ic_nev || '-'}</span></div>
+                <div><strong style="color:var(--text-muted);">User:</strong> <span style="color:var(--accent); font-weight:bold;">${p.nev}</span></div>
+                <div><strong style="color:var(--text-muted);">Rang:</strong> <span style="color:white; border:1px solid var(--border); padding:0.2rem 0.8rem; border-radius:50px; background:rgba(255,255,255,0.05); font-size:0.9rem; margin-left:5px;">${p.rang}</span></div>
+                <div><strong style="color:var(--text-muted);">Discord ID:</strong> <span style="color:var(--text);">${p.discord || '-'}</span></div>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px; padding:20px; background:rgba(0, 210, 255, 0.05); border-radius:8px; color:var(--accent); border:1px solid rgba(0,210,255,0.1); flex-wrap:wrap;">
+                <div style="flex:1; min-width:120px;">
+                    <strong style="display:flex; align-items:center;">Összes Szervezett: ${tooltipOsszesSzervezett}</strong>
+                    <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_szervezett || 0}</span>
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <strong style="display:flex; align-items:center;">Összes Résztvett: ${tooltipOsszesResztvett}</strong>
+                    <br><span style="color:white; font-size:1.5rem; font-weight:bold;">${p.akcio_resztvett || 0}</span>
+                </div>
+                <div style="flex:1; min-width:120px; border-left:1px solid rgba(0,210,255,0.2); padding-left:10px;">
+                    <strong style="display:flex; align-items:center;">14 Napos Szervezett: ${tooltip14NaposSzervezett}</strong>
+                    <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_szervezett || 0}</span>
+                </div>
+                <div style="flex:1; min-width:120px;">
+                    <strong style="display:flex; align-items:center;">14 Napos Résztvett: ${tooltip14NaposResztvett}</strong>
+                    <br><span style="color:var(--warn); font-size:1.5rem; font-weight:bold;">${p.heti2_resztvett || 0}</span>
+                </div>
+            </div>
+            
+            <div id="sajat-warns" style="margin-top:20px; margin-bottom:20px;"></div>
+            
+            <p style="color:var(--text-muted); margin:0 0 10px 0;">Bemutatkozás / Jegyzet:</p>
+            <textarea id="input-bemutatkozas" rows="6" placeholder="Írj magadról vagy jegyzetelj...">${p.bemutatkozas || ''}</textarea>
+            <button class="btn" style="width: 100%; border-color:var(--accent); color:white; background:rgba(0,210,255,0.1); margin-bottom: 25px; letter-spacing:2px;" onclick="mentesProfil()">Mentés</button>
+            
+            <div style="padding:20px; background:rgba(255, 45, 85, 0.03); border: 1px solid rgba(255, 45, 85, 0.2); border-radius:8px; margin-top:10px;">
+                <h3 style="color:var(--danger); margin-top:0; font-size:1.3rem; text-shadow:0 0 10px var(--danger);">Jelszó Módosítása</h3>
+                <input type="password" id="profil-uj-jelszo" placeholder="Új jelszó...">
+                <button class="btn btn-danger" style="width:100%; letter-spacing:2px;" onclick="profilJelszocsere()">Mentés</button>
+            </div>
+        </div>`;
+        
         const ps = document.getElementById('profil-section');
         if (ps) {
             ps.innerHTML = h;

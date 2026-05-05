@@ -65,7 +65,7 @@ export default async function handler(req, res) {
             return res.json({ valid: true });
         }
 
-        // --- MANUÁLIS LEADANDÓ ZÁRÁS (ÚJ FUNKCIÓ) ---
+        //MANUÁLIS LEADANDÓ ZÁRÁS
         if (path === '/api/leadando_zaras' && method === 'POST') {
             if (!user.jog_admin && user.rang !== 'DEV') return res.status(403).json({error: 'Nincs jogosultságod a záráshoz!'});
             if (isZarasFolyamatban) return res.status(400).json({error: 'A zárás éppen folyamatban van, kérlek várj!'});
